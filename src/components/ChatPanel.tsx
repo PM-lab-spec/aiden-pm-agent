@@ -1,8 +1,10 @@
-import { useState, useRef, useCallback } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Send, Loader2, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { streamChat } from "@/lib/streamChat";
+import { toast } from "sonner";
 
 type Message = {
   id: string;
@@ -23,31 +25,65 @@ export default function ChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  const handleStop = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  };
 
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: trimmed };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response for now (will connect to edge function)
-    setTimeout(() => {
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: `I understand you'd like me to help with: **"${trimmed}"**\n\nOnce documents are uploaded and the AI backend is connected, I'll be able to reason over your product documents and generate structured outputs.\n\nFor now, try uploading some documents in the sidebar to get started!`,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsLoading(false);
-      scrollToBottom();
-    }, 1200);
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    let assistantSoFar = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      const content = assistantSoFar;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
+        }
+        return [...prev, { id: crypto.randomUUID(), role: "assistant", content }];
+      });
+    };
+
+    try {
+      await streamChat({
+        messages: updatedMessages.map(({ role, content }) => ({ role, content })),
+        onDelta: upsertAssistant,
+        onDone: () => setIsLoading(false),
+        onError: (error) => {
+          toast.error(error);
+          setIsLoading(false);
+        },
+        signal: controller.signal,
+      });
+    } catch (e: any) {
+      if (e.name !== "AbortError") {
+        toast.error("Failed to connect to AI. Please try again.");
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -152,14 +188,25 @@ export default function ChatPanel() {
               target.style.height = Math.min(target.scrollHeight, 120) + "px";
             }}
           />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            className="rounded-xl h-[44px] w-[44px] shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {isLoading ? (
+            <Button
+              onClick={handleStop}
+              size="icon"
+              variant="outline"
+              className="rounded-xl h-[44px] w-[44px] shrink-0"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              size="icon"
+              className="rounded-xl h-[44px] w-[44px] shrink-0"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

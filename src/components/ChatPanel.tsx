@@ -191,9 +191,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none">
-                        <ArtifactMarkdown content={msg.content} />
-                      </div>
+                      <ArtifactMarkdown content={msg.content} />
                     ) : (
                       msg.content
                     )}

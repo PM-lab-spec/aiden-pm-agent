@@ -29,9 +29,10 @@ When generating artifacts, always use these structured formats:
 - Rollout Plan
 
 **User Stories Format:**
-- Epic name and description
-- Stories with "As a [persona], I want [action], so that [outcome]"
-- Acceptance Criteria for each story
+- ALWAYS use a markdown table with columns: Epic, User Story, Acceptance Criteria
+- Each row is one story. Use "As a [persona], I want [action], so that [outcome]" in the User Story column
+- For multi-line acceptance criteria within a table cell, use numbered items separated by spaces (do NOT use <br> tags)
+- Add a brief epic description paragraph before the table
 
 **Roadmap Format:**
 - Now (current sprint/quarter)

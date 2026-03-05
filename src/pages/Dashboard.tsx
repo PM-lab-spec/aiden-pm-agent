@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus, LogOut } from "lucide-react";
+import { Bot, Home, BookOpen, FolderOpen, User, Plus, LogOut, BarChart3, FileText, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,10 @@ import DocumentSidebar from "@/components/DocumentSidebar";
 import ArtifactPanel from "@/components/ArtifactPanel";
 import ChatHistoryDropdown from "@/components/ChatHistoryDropdown";
 import { DocumentProvider } from "@/context/DocumentContext";
+import { useChatHistory, type ChatSession } from "@/hooks/useChatHistory";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export default function Dashboard() {
   const promptHandledRef = useRef(false);
   const promptTimeoutRef = useRef<number | null>(null);
   const { user, signOut } = useAuth();
+  const [sidebarPage, setSidebarPage] = useState<"home" | "resources">("home");
 
   const handleSignOut = async () => {
     await signOut();
@@ -28,20 +29,16 @@ export default function Dashboard() {
   // Auto-send prompt from homepage (once only)
   useEffect(() => {
     if (promptHandledRef.current) return;
-
     const params = new URLSearchParams(location.search);
     const prompt = params.get("prompt")?.trim();
     if (!prompt) return;
-
     promptHandledRef.current = true;
     params.delete("prompt");
     const cleaned = params.toString();
     window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
-
     promptTimeoutRef.current = window.setTimeout(() => {
       chatRef.current?.sendMessage(prompt);
     }, 250);
-
     return () => {
       if (promptTimeoutRef.current) {
         window.clearTimeout(promptTimeoutRef.current);
@@ -57,6 +54,7 @@ export default function Dashboard() {
   const handleNewChat = () => {
     chatRef.current?.clearMessages();
     setActiveChatId(null);
+    setSidebarPage("home");
   };
 
   const handleSelectSession = (chatSessionId: string) => {
@@ -64,99 +62,115 @@ export default function Dashboard() {
     setActiveChatId(chatSessionId);
   };
 
+  const userName = user?.email?.split("@")[0] || "User";
+
   return (
     <DocumentProvider>
       <div className="flex h-screen bg-background">
-        {/* Left sidebar */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-r border-border bg-sidebar flex flex-col overflow-hidden shrink-0"
+        {/* Dark sidebar */}
+        <aside className="w-[220px] bg-[hsl(240,10%,12%)] flex flex-col shrink-0 text-[hsl(0,0%,85%)]">
+          {/* User button */}
+          <div className="p-3">
+            <button className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg hover:bg-[hsl(240,10%,18%)] transition-colors">
+              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground uppercase">
+                {userName.charAt(0)}
+              </div>
+              <span className="text-sm font-medium truncate flex-1 text-left">{userName}'s Aiden</span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+            </button>
+          </div>
+
+          {/* Nav items */}
+          <nav className="px-3 space-y-0.5">
+            <button
+              onClick={() => { handleNewChat(); setSidebarPage("home"); }}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
+                sidebarPage === "home" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+              }`}
             >
-              {/* Logo + New Chat */}
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Bot className="h-4.5 w-4.5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h1 className="text-sm font-bold text-foreground tracking-tight">Aiden</h1>
-                    <p className="text-xs text-muted-foreground">PM Assistant</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleNewChat}
-                  title="New Chat"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              <Home className="h-4 w-4" />
+              Home
+            </button>
+            <button
+              onClick={() => setSidebarPage("resources")}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
+                sidebarPage === "resources" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              Resources
+            </button>
+          </nav>
 
-              {/* Artifact generators */}
-              <ArtifactPanel onGenerate={handleGenerate} />
+          {/* Projects section */}
+          <div className="mt-6 px-3">
+            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(0,0%,50%)] mb-1.5">
+              Projects
+            </p>
+            <nav className="space-y-0.5">
+              <button className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors">
+                <FolderOpen className="h-4 w-4" />
+                All projects
+              </button>
+              <button className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors">
+                <User className="h-4 w-4" />
+                Created by me
+              </button>
+            </nav>
+          </div>
 
-              {/* Document sidebar */}
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <DocumentSidebar />
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
+          {/* Recents section */}
+          <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(0,0%,50%)] mb-1.5">
+              Recents
+            </p>
+            <ChatHistoryDropdown
+              onNewChat={handleNewChat}
+              onSelectSession={handleSelectSession}
+              activeChatId={activeChatId}
+              variant="sidebar"
+            />
+          </div>
+
+          {/* Bottom actions */}
+          <div className="p-3 border-t border-[hsl(240,10%,18%)] space-y-0.5">
+            <button
+              onClick={() => navigate("/analytics")}
+              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+              title={user?.email || "Sign out"}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
+        </aside>
 
         {/* Main area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top bar */}
-          <header className="h-12 border-b border-border flex items-center px-4 gap-3 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="h-4 w-4" />
-              ) : (
-                <PanelLeft className="h-4 w-4" />
-              )}
-            </Button>
-            <span className="text-sm font-medium text-foreground">Chat</span>
-            <div className="ml-auto flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-muted-foreground"
-                onClick={handleNewChat}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="text-xs">New Chat</span>
-              </Button>
-              <ChatHistoryDropdown
-                onNewChat={handleNewChat}
-                onSelectSession={handleSelectSession}
-                activeChatId={activeChatId}
-              />
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => navigate("/analytics")}>
-                <BarChart3 className="h-3.5 w-3.5" />
-                <span className="text-xs">Analytics</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={handleSignOut} title={user?.email || "Sign out"}>
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="text-xs">Sign Out</span>
-              </Button>
+          {sidebarPage === "resources" ? (
+            <div className="flex-1 flex flex-col">
+              {/* Resources view: artifacts + documents */}
+              <div className="p-6 max-w-3xl mx-auto w-full">
+                <h2 className="text-xl font-semibold text-foreground mb-4">Resources</h2>
+                <ArtifactPanel onGenerate={handleGenerate} />
+                <div className="mt-6">
+                  <DocumentSidebar />
+                </div>
+              </div>
             </div>
-          </header>
-
-          {/* Chat */}
-          <div className="flex-1 min-h-0">
-            <ChatPanel ref={chatRef} />
-          </div>
+          ) : (
+            /* Home / Chat view */
+            <div className="flex-1 min-h-0">
+              <ChatPanel ref={chatRef} userName={userName} />
+            </div>
+          )}
         </div>
       </div>
     </DocumentProvider>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { History, Plus, MessageSquare, ChevronDown, Trash2 } from "lucide-react";
+import { History, Plus, MessageSquare, ChevronDown, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,20 +26,39 @@ interface ChatHistoryDropdownProps {
   onNewChat: () => void;
   onSelectSession: (sessionId: string) => void;
   activeChatId: string | null;
+  variant?: "dropdown" | "sidebar";
 }
 
 export default function ChatHistoryDropdown({
   onNewChat,
   onSelectSession,
   activeChatId,
+  variant = "dropdown",
 }: ChatHistoryDropdownProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [open, setOpen] = useState(false);
   const { sessionId } = useDocuments();
   const { user } = useAuth();
 
+  // For sidebar variant, load immediately; for dropdown, load on open
   useEffect(() => {
-    if (!open || !user) return;
+    if (variant === "sidebar") {
+      if (!user) return;
+      (async () => {
+        const { data } = await supabase
+          .from("chat_sessions")
+          .select("*")
+          .eq("session_id", sessionId)
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false })
+          .limit(10);
+        if (data) setSessions(data as ChatSession[]);
+      })();
+    }
+  }, [variant, sessionId, user]);
+
+  useEffect(() => {
+    if (variant !== "dropdown" || !open || !user) return;
     (async () => {
       const { data } = await supabase
         .from("chat_sessions")
@@ -50,7 +69,7 @@ export default function ChatHistoryDropdown({
         .limit(20);
       if (data) setSessions(data as ChatSession[]);
     })();
-  }, [open, sessionId, user]);
+  }, [open, sessionId, user, variant]);
 
   const handleDelete = async (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();
@@ -79,6 +98,33 @@ export default function ChatHistoryDropdown({
     return `${diffDay}d ago`;
   };
 
+  // Sidebar variant: render as flat list
+  if (variant === "sidebar") {
+    return (
+      <nav className="space-y-0.5">
+        {sessions.length === 0 ? (
+          <p className="px-2.5 py-2 text-xs text-[hsl(0,0%,40%)]">No recent chats</p>
+        ) : (
+          sessions.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onSelectSession(s.id)}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors group ${
+                activeChatId === s.id
+                  ? "bg-[hsl(240,10%,20%)] text-white"
+                  : "hover:bg-[hsl(240,10%,18%)] text-[hsl(0,0%,70%)]"
+              }`}
+            >
+              <FileText className="h-4 w-4 shrink-0 opacity-60" />
+              <span className="truncate flex-1 text-left">{s.title}</span>
+            </button>
+          ))
+        )}
+      </nav>
+    );
+  }
+
+  // Dropdown variant (original)
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>

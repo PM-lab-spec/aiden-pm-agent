@@ -1,10 +1,11 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Send, Loader2, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
+import { useDocuments } from "@/context/DocumentContext";
 
 type Message = {
   id: string;
@@ -19,13 +20,16 @@ const SUGGESTED_PROMPTS = [
   "Suggest roadmap priorities for next quarter",
 ];
 
-export default function ChatPanel() {
+export type ChatPanelHandle = { sendMessage: (text: string) => void };
+
+const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const { getDocumentContext, documents } = useDocuments();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,6 +44,51 @@ export default function ChatPanel() {
     abortRef.current = null;
     setIsLoading(false);
   };
+
+  const sendMessageDirect = async (text: string) => {
+    if (isLoading) return;
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text };
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+    setIsLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const docContext = getDocumentContext();
+    const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
+    if (docContext) {
+      messagesForAI.unshift({ role: "user", content: `[DOCUMENT CONTEXT]\n\n${docContext}\n\n[END DOCUMENT CONTEXT]` });
+      messagesForAI.splice(1, 0, { role: "assistant", content: "I've received and reviewed the uploaded documents." });
+    }
+
+    let assistantSoFar = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      const content = assistantSoFar;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
+        }
+        return [...prev, { id: crypto.randomUUID(), role: "assistant", content }];
+      });
+    };
+
+    try {
+      await streamChat({
+        messages: messagesForAI,
+        onDelta: upsertAssistant,
+        onDone: () => setIsLoading(false),
+        onError: (error) => { toast.error(error); setIsLoading(false); },
+        signal: controller.signal,
+      });
+    } catch (e: any) {
+      if (e.name !== "AbortError") { toast.error("Failed to connect to AI."); setIsLoading(false); }
+    }
+  };
+
+  useImperativeHandle(ref, () => ({ sendMessage: sendMessageDirect }));
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -67,9 +116,26 @@ export default function ChatPanel() {
       });
     };
 
+    // Build messages with document context injected
+    const docContext = getDocumentContext();
+    const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
+
+    // Inject document context as a system-level user message at the start
+    if (docContext) {
+      messagesForAI.unshift({
+        role: "user" as const,
+        content: `[DOCUMENT CONTEXT - The user has uploaded the following documents. Use them to answer questions and generate artifacts.]\n\n${docContext}\n\n[END DOCUMENT CONTEXT]`,
+      });
+      // Add a fake assistant ack so the model knows it received the docs
+      messagesForAI.splice(1, 0, {
+        role: "assistant" as const,
+        content: "I've received and reviewed the uploaded documents. I'll use them as context for our conversation.",
+      });
+    }
+
     try {
       await streamChat({
-        messages: updatedMessages.map(({ role, content }) => ({ role, content })),
+        messages: messagesForAI,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => {
@@ -211,4 +277,8 @@ export default function ChatPanel() {
       </div>
     </div>
   );
-}
+});
+
+ChatPanel.displayName = "ChatPanel";
+
+export default ChatPanel;

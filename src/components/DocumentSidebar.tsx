@@ -1,15 +1,7 @@
-import { useState, useRef } from "react";
-import { Upload, FileText, X, File, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRef, useState } from "react";
+import { Upload, FileText, X, File, Loader2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-type UploadedFile = {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  status: "uploading" | "indexed" | "error";
-};
+import { useDocuments } from "@/context/DocumentContext";
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
@@ -18,38 +10,14 @@ function formatFileSize(bytes: number) {
 }
 
 export default function DocumentSidebar() {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const { documents, addDocuments, removeDocument } = useDocuments();
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFiles = (fileList: FileList) => {
-    const newFiles: UploadedFile[] = Array.from(fileList).map((f) => ({
-      id: crypto.randomUUID(),
-      name: f.name,
-      size: f.size,
-      type: f.type,
-      status: "uploading" as const,
-    }));
-    setFiles((prev) => [...newFiles, ...prev]);
-
-    // Simulate upload + indexing
-    newFiles.forEach((file) => {
-      setTimeout(() => {
-        setFiles((prev) =>
-          prev.map((f) => (f.id === file.id ? { ...f, status: "indexed" } : f))
-        );
-      }, 1500 + Math.random() * 1000);
-    });
-  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-  };
-
-  const removeFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+    if (e.dataTransfer.files.length) addDocuments(e.dataTransfer.files);
   };
 
   return (
@@ -88,14 +56,17 @@ export default function DocumentSidebar() {
           multiple
           accept=".pdf,.docx,.txt,.md,.csv"
           className="hidden"
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          onChange={(e) => {
+            if (e.target.files) addDocuments(e.target.files);
+            e.target.value = "";
+          }}
         />
       </div>
 
       {/* File list */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 pb-4">
         <AnimatePresence>
-          {files.map((file) => (
+          {documents.map((file) => (
             <motion.div
               key={file.id}
               initial={{ opacity: 0, height: 0 }}
@@ -107,6 +78,8 @@ export default function DocumentSidebar() {
                 <div className="shrink-0">
                   {file.status === "uploading" ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : file.status === "error" ? (
+                    <AlertCircle className="h-4 w-4 text-destructive" />
                   ) : (
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -120,10 +93,13 @@ export default function DocumentSidebar() {
                     {file.status === "indexed" && (
                       <span className="text-success ml-1.5">• Indexed</span>
                     )}
+                    {file.status === "error" && (
+                      <span className="text-destructive ml-1.5">• Error reading file</span>
+                    )}
                   </p>
                 </div>
                 <button
-                  onClick={() => removeFile(file.id)}
+                  onClick={() => removeDocument(file.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
@@ -132,7 +108,7 @@ export default function DocumentSidebar() {
             </motion.div>
           ))}
         </AnimatePresence>
-        {files.length === 0 && (
+        {documents.length === 0 && (
           <div className="text-center py-8">
             <File className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
             <p className="text-xs text-muted-foreground">No documents yet</p>

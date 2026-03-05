@@ -94,12 +94,14 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const [editTitleValue, setEditTitleValue] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Derive header: activeDocumentName (reactive) > prop documentName > custom title > first question
-  const displayDocName = activeDocumentName || documentName;
+  // Derive header: session document (chat-specific) > reactive active document > custom title > first question
+  const displayDocName = documentName || activeDocumentName;
   const headerText = displayDocName || customTitle || firstQuestion || "New Chat";
-  // Keep ref in sync with prop
+
+  // Keep refs in sync with prop (including reset on new chat)
   useEffect(() => {
-    if (chatSessionId) sessionIdRef.current = chatSessionId;
+    sessionIdRef.current = chatSessionId ?? null;
+    if (!chatSessionId) creatingSessionRef.current = null;
   }, [chatSessionId]);
 
   const initializedRef = useRef(false);
@@ -138,7 +140,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
     if (creatingSessionRef.current) return creatingSessionRef.current;
     const promise = chatHistory.createSession(
       firstMsg.slice(0, 60) + (firstMsg.length > 60 ? "..." : ""),
-      activeDocumentName
+      displayDocName || null
     ).then(id => {
       sessionIdRef.current = id;
       creatingSessionRef.current = null;
@@ -218,7 +220,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
       await streamChat({
         messages: messagesForAI,
         sessionId,
-        activeDocumentName,
+        activeDocumentName: displayDocName,
         agentType: agentId,
         onDelta: upsertAssistant,
         onDone: async () => {

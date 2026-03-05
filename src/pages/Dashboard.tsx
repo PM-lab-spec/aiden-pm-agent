@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Bot, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Bot, PanelLeftClose, PanelLeft, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const chatRef = useRef<ChatPanelHandle>(null);
+  const navigate = useNavigate();
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
     chatRef.current?.sendMessage(prompt);
@@ -67,6 +69,12 @@ export default function Dashboard() {
               )}
             </Button>
             <span className="text-sm font-medium text-foreground">Chat</span>
+            <div className="ml-auto">
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => navigate("/analytics")}>
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span className="text-xs">Analytics</span>
+              </Button>
+            </div>
           </header>
 
           {/* Chat */}

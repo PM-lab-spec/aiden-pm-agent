@@ -337,7 +337,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       setEditTitleValue(customTitle || firstQuestion || "");
                       setIsEditingTitle(true);
                     }}
-                    className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,40%)] hover:text-white transition-colors"
+                    className="p-1 rounded hover:bg-dark-surface-hover text-dark-text-subtle hover:text-dark-text-heading transition-colors"
                     title="Edit title"
                   >
                     <Pencil className="h-3.5 w-3.5" />

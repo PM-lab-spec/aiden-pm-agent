@@ -23,9 +23,10 @@ export type ChatPanelHandle = {
 
 interface ChatPanelProps {
   userName?: string;
+  onTransitionToAgents?: (firstMessage: string, docName: string | null) => void;
 }
 
-const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "there" }, ref) => {
+const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "there", onTransitionToAgents }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +72,13 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     if (fromInput) setInput("");
+
+    // Transition to agents view on first message
+    if (messages.length === 0 && onTransitionToAgents) {
+      onTransitionToAgents(text, activeDocumentName);
+      return;
+    }
+
     setIsLoading(true);
 
     let chatId: string;

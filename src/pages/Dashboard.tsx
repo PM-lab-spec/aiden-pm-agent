@@ -1,25 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Home, BookOpen, FolderOpen, User, Plus, LogOut, BarChart3, FileText, ChevronDown } from "lucide-react";
+import { Home, BookOpen, FolderOpen, User, LogOut, BarChart3, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
 import ArtifactPanel from "@/components/ArtifactPanel";
+import AgentCardsView from "@/components/AgentCardsView";
 import ChatHistoryDropdown from "@/components/ChatHistoryDropdown";
 import { DocumentProvider } from "@/context/DocumentContext";
 import { useChatHistory, type ChatSession } from "@/hooks/useChatHistory";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"home" | "agents" | "resources">("home");
+  const [agentDocName, setAgentDocName] = useState<string | null>(null);
+  const [agentFirstQuestion, setAgentFirstQuestion] = useState<string | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const promptHandledRef = useRef(false);
   const promptTimeoutRef = useRef<number | null>(null);
   const { user, signOut } = useAuth();
-  const [sidebarPage, setSidebarPage] = useState<"home" | "resources">("home");
 
   const handleSignOut = async () => {
     await signOut();
@@ -36,15 +37,9 @@ export default function Dashboard() {
     params.delete("prompt");
     const cleaned = params.toString();
     window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
-    promptTimeoutRef.current = window.setTimeout(() => {
-      chatRef.current?.sendMessage(prompt);
-    }, 250);
-    return () => {
-      if (promptTimeoutRef.current) {
-        window.clearTimeout(promptTimeoutRef.current);
-        promptTimeoutRef.current = null;
-      }
-    };
+    // Transition to agents view with the prompt as first question
+    setAgentFirstQuestion(prompt);
+    setViewMode("agents");
   }, [location.search]);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
@@ -54,12 +49,26 @@ export default function Dashboard() {
   const handleNewChat = () => {
     chatRef.current?.clearMessages();
     setActiveChatId(null);
-    setSidebarPage("home");
+    setAgentDocName(null);
+    setAgentFirstQuestion(null);
+    setViewMode("home");
   };
 
   const handleSelectSession = (chatSessionId: string) => {
     chatRef.current?.switchToSession(chatSessionId);
     setActiveChatId(chatSessionId);
+    setViewMode("agents");
+  };
+
+  // Called from ChatPanel when user sends first message or uploads doc
+  const handleTransitionToAgents = (firstMessage: string, docName: string | null) => {
+    setAgentFirstQuestion(firstMessage);
+    setAgentDocName(docName);
+    setViewMode("agents");
+  };
+
+  const handleChatSessionCreated = (id: string) => {
+    setActiveChatId(id);
   };
 
   const userName = user?.email?.split("@")[0] || "User";
@@ -83,18 +92,18 @@ export default function Dashboard() {
           {/* Nav items */}
           <nav className="px-3 space-y-0.5">
             <button
-              onClick={() => { handleNewChat(); setSidebarPage("home"); }}
+              onClick={() => { handleNewChat(); }}
               className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                sidebarPage === "home" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+                viewMode === "home" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
               }`}
             >
               <Home className="h-4 w-4" />
               Home
             </button>
             <button
-              onClick={() => setSidebarPage("resources")}
+              onClick={() => setViewMode("resources")}
               className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                sidebarPage === "resources" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+                viewMode === "resources" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
               }`}
             >
               <BookOpen className="h-4 w-4" />
@@ -154,9 +163,8 @@ export default function Dashboard() {
 
         {/* Main area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {sidebarPage === "resources" ? (
+          {viewMode === "resources" ? (
             <div className="flex-1 flex flex-col">
-              {/* Resources view: artifacts + documents */}
               <div className="p-6 max-w-3xl mx-auto w-full">
                 <h2 className="text-xl font-semibold text-foreground mb-4">Resources</h2>
                 <ArtifactPanel onGenerate={handleGenerate} />
@@ -165,10 +173,19 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+          ) : viewMode === "agents" ? (
+            <div className="flex-1 min-h-0" style={{ background: "var(--gradient-chat-bg)" }}>
+              <AgentCardsView
+                documentName={agentDocName}
+                firstQuestion={agentFirstQuestion}
+                chatSessionId={activeChatId}
+                onChatSessionCreated={handleChatSessionCreated}
+              />
+            </div>
           ) : (
             /* Home / Chat view */
             <div className="flex-1 min-h-0" style={{ background: "var(--gradient-chat-bg)" }}>
-              <ChatPanel ref={chatRef} />
+              <ChatPanel ref={chatRef} onTransitionToAgents={handleTransitionToAgents} />
             </div>
           )}
         </div>

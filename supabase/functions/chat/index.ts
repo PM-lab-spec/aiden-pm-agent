@@ -177,13 +177,24 @@ async function getQueryEmbedding(query: string, apiKey: string): Promise<number[
   return data.data[0].embedding;
 }
 
+function getAgentFocusPrompt(agentType: string): string {
+  const prompts: Record<string, string> = {
+    prd: "\n\nFOCUS: You are currently in PRD mode. Prioritize generating and discussing Product Requirements Documents. Structure responses with Problem Statement, User Persona, Goals, Feature Description, User Journey, Requirements, Risks, Success Metrics, and Rollout Plan.",
+    stories: "\n\nFOCUS: You are currently in User Stories mode. Prioritize generating and discussing User Stories. Always use the table format: | Epic | User Story ID | User Story | Acceptance Criteria | Priority |",
+    research: "\n\nFOCUS: You are currently in Market Research mode. Prioritize competitive analysis, market trends, target market insights, competitive landscape analysis, and actionable market research takeaways.",
+    metrics: "\n\nFOCUS: You are currently in Metrics & KPIs mode. Prioritize discussing and generating metrics plans. Use the table format: | Metric Category | Metric Name | Description | How to Measure | Success Target |",
+    roadmap: "\n\nFOCUS: You are currently in Roadmap mode. Prioritize generating and discussing product roadmaps. Use the table format: | Timeline | Initiative | Description | Key Features | Success Metric | with Now/Next/Later timeline values.",
+  };
+  return prompts[agentType] || "";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, sessionId, activeDocumentName: clientActiveDoc } = await req.json();
+    const { messages, sessionId, activeDocumentName: clientActiveDoc, agentType } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -312,7 +323,8 @@ serve(async (req) => {
     }
 
     // Build the messages array with RAG context
-    const aiMessages: any[] = [{ role: "system", content: SYSTEM_PROMPT }];
+    const agentFocus = agentType ? getAgentFocusPrompt(agentType) : "";
+    const aiMessages: any[] = [{ role: "system", content: SYSTEM_PROMPT + agentFocus }];
 
     if (feedbackContext) {
       aiMessages.push({

@@ -6,6 +6,7 @@ export async function streamChat({
   messages,
   sessionId,
   activeDocumentName,
+  agentType,
   onDelta,
   onDone,
   onError,
@@ -14,6 +15,7 @@ export async function streamChat({
   messages: Msg[];
   sessionId?: string;
   activeDocumentName?: string | null;
+  agentType?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -25,7 +27,7 @@ export async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, sessionId, activeDocumentName }),
+    body: JSON.stringify({ messages, sessionId, activeDocumentName, agentType }),
     signal,
   });
 

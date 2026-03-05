@@ -259,7 +259,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
             }
           }
         },
-        onError: (error) => { toast.error(error); setLoadingAgent(null); },
+        onError: (error) => { toast.error(error); setLoadingAgent(null); sendingRef.current = false; },
         signal: controller.signal,
       });
     } catch (e: any) {

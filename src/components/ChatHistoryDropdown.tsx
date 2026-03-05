@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { History, Plus, MessageSquare, ChevronDown } from "lucide-react";
+import { History, Plus, MessageSquare, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocuments } from "@/context/DocumentContext";
+import { toast } from "sonner";
 
 type ChatSession = {
   id: string;
@@ -47,6 +48,20 @@ export default function ChatHistoryDropdown({
       if (data) setSessions(data as ChatSession[]);
     })();
   }, [open, sessionId]);
+
+  const handleDelete = async (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await supabase.from("chat_messages").delete().eq("chat_session_id", chatId);
+      await supabase.from("chat_sessions").delete().eq("id", chatId);
+      setSessions((prev) => prev.filter((s) => s.id !== chatId));
+      if (activeChatId === chatId) onNewChat();
+      toast.success("Chat deleted");
+    } catch {
+      toast.error("Failed to delete chat");
+    }
+  };
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -88,7 +103,7 @@ export default function ChatHistoryDropdown({
             <DropdownMenuItem
               key={s.id}
               onClick={() => { onSelectSession(s.id); setOpen(false); }}
-              className={`gap-2 ${activeChatId === s.id ? "bg-accent" : ""}`}
+              className={`gap-2 group ${activeChatId === s.id ? "bg-accent" : ""}`}
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
@@ -98,6 +113,13 @@ export default function ChatHistoryDropdown({
                   {formatTime(s.updated_at)}
                 </p>
               </div>
+              <button
+                onClick={(e) => handleDelete(e, s.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
+                title="Delete chat"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </DropdownMenuItem>
           ))
         )}

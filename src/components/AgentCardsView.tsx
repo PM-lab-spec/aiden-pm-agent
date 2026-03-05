@@ -405,7 +405,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                   </div>
                   <button
                     onClick={() => setExpandedAgent(null)}
-                    className="flex items-center gap-1.5 text-sm text-[hsl(0,0%,60%)] hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-dark-text-muted hover:text-dark-text-heading transition-colors"
                   >
                     <X className="h-4 w-4" />
                     Close

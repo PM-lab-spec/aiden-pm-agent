@@ -537,7 +537,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                     <p className="text-sm text-dark-text-hint">{agent.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-[hsl(0,0%,50%)] group-hover:text-white transition-colors">
+                <div className="flex items-center gap-1.5 text-sm text-dark-text-muted group-hover:text-dark-text-heading transition-colors">
                   <MessageCircle className="h-4 w-4" />
                   Chat
                 </div>

@@ -1,5 +1,6 @@
 # Aiden — AI-Powered Product Management Assistant
 
+> **Last updated:** 2026-03-05  
 > Turn messy product information into structured, actionable outputs. Upload documents, ask questions, and generate PRDs, user stories, roadmaps, and more — all grounded in your real data.
 
 ---

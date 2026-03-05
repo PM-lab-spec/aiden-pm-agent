@@ -311,7 +311,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       setIsEditingTitle(false);
                     }
                   }}
-                  className="bg-transparent border border-[hsl(0,0%,30%)] rounded-md px-2 py-1 text-white font-semibold text-lg focus:outline-none focus:border-primary"
+                  className="bg-transparent border border-dark-border rounded-md px-2 py-1 text-dark-text-heading font-semibold text-lg focus:outline-none focus:border-primary"
                   autoFocus
                 />
                 <button

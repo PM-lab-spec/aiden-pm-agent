@@ -82,6 +82,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const [agentInputs, setAgentInputs] = useState<Record<string, string>>({});
   const [loadingAgent, setLoadingAgent] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string | null>(chatSessionId);
+  const creatingSessionRef = useRef<Promise<string> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { sessionId, activeDocumentName, addDocuments } = useDocuments();
@@ -95,6 +97,11 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   // Derive header: activeDocumentName (reactive) > prop documentName > custom title > first question
   const displayDocName = activeDocumentName || documentName;
   const headerText = displayDocName || customTitle || firstQuestion || "New Chat";
+  // Keep ref in sync with prop
+  useEffect(() => {
+    if (chatSessionId) sessionIdRef.current = chatSessionId;
+  }, [chatSessionId]);
+
   const initializedRef = useRef(false);
 
   // Seed initial messages into General Chat and auto-expand it
@@ -127,13 +134,19 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   };
 
   const ensureSession = async (firstMsg: string): Promise<string> => {
-    if (chatSessionId) return chatSessionId;
-    const id = await chatHistory.createSession(
+    if (sessionIdRef.current) return sessionIdRef.current;
+    if (creatingSessionRef.current) return creatingSessionRef.current;
+    const promise = chatHistory.createSession(
       firstMsg.slice(0, 60) + (firstMsg.length > 60 ? "..." : ""),
       activeDocumentName
-    );
-    onChatSessionCreated(id);
-    return id;
+    ).then(id => {
+      sessionIdRef.current = id;
+      creatingSessionRef.current = null;
+      onChatSessionCreated(id);
+      return id;
+    });
+    creatingSessionRef.current = promise;
+    return promise;
   };
 
   const getAllSessionMessages = (): { role: "user" | "assistant"; content: string }[] => {

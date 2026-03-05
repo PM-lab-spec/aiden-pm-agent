@@ -82,6 +82,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const [agentInputs, setAgentInputs] = useState<Record<string, string>>({});
   const [loadingAgent, setLoadingAgent] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sendingRef = useRef(false);
   const sessionIdRef = useRef<string | null>(chatSessionId);
   const creatingSessionRef = useRef<Promise<string> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

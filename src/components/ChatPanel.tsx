@@ -76,11 +76,19 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     if (fromInput) setInput("");
     setIsLoading(true);
 
-    // Persist user message
-    const chatId = await ensureSession(text);
-    await chatHistory.saveMessage(chatId, "user", text);
-    if (updatedMessages.filter(m => m.role === "user").length === 1) {
-      await chatHistory.updateSessionTitle(chatId, text);
+    let chatId: string;
+    try {
+      // Persist user message
+      chatId = await ensureSession(text);
+      await chatHistory.saveMessage(chatId, "user", text);
+      if (updatedMessages.filter(m => m.role === "user").length === 1) {
+        await chatHistory.updateSessionTitle(chatId, text);
+      }
+    } catch (e) {
+      console.error("Failed to persist message:", e);
+      toast.error("Failed to save message. Please try again.");
+      setIsLoading(false);
+      return;
     }
 
     const controller = new AbortController();
@@ -112,7 +120,11 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
           // Persist final assistant message
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
-            await chatHistory.saveMessage(chatId, "assistant", assistantSoFar);
+            try {
+              await chatHistory.saveMessage(chatId, "assistant", assistantSoFar);
+            } catch (e) {
+              console.error("Failed to save assistant message:", e);
+            }
           }
         },
         onError: (error) => { toast.error(error); setIsLoading(false); },

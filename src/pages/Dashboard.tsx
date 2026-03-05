@@ -80,6 +80,7 @@ export default function Dashboard() {
     const restoredMessages = (messages || []).map((m: any) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
+      agent_type: m.agent_type || "general",
     }));
 
     setActiveChatId(chatSessionId);

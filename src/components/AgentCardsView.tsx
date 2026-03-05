@@ -73,7 +73,7 @@ interface AgentCardsViewProps {
   firstQuestion: string | null;
   chatSessionId: string | null;
   onChatSessionCreated: (id: string) => void;
-  initialMessages?: { role: "user" | "assistant"; content: string }[] | null;
+  initialMessages?: { role: "user" | "assistant"; content: string; agent_type?: string }[] | null;
 }
 
 export default function AgentCardsView({ documentName, firstQuestion, chatSessionId, onChatSessionCreated, initialMessages }: AgentCardsViewProps) {

@@ -249,6 +249,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
         onDelta: upsertAssistant,
         onDone: async () => {
           setLoadingAgent(null);
+          sendingRef.current = false;
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
             try {

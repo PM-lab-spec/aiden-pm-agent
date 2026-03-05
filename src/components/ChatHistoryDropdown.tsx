@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { History, Plus, MessageSquare, ChevronDown, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useDocuments } from "@/context/DocumentContext";
 import { useAuth } from "@/context/AuthContext";
+import { onChatSessionChange } from "@/hooks/useChatSessionEvents";
 import { toast } from "sonner";
 
 type ChatSession = {
@@ -40,36 +41,32 @@ export default function ChatHistoryDropdown({
   const { sessionId } = useDocuments();
   const { user } = useAuth();
 
-  // For sidebar variant, load immediately; for dropdown, load on open
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("chat_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(20);
+    if (data) setSessions(data as ChatSession[]);
+  }, [user]);
+
+  // For sidebar variant, load immediately and listen for changes
   useEffect(() => {
     if (variant === "sidebar") {
-      if (!user) return;
-      (async () => {
-        const { data } = await supabase
-          .from("chat_sessions")
-          .select("*")
-          .eq("session_id", sessionId)
-          .eq("user_id", user.id)
-          .order("updated_at", { ascending: false })
-          .limit(10);
-        if (data) setSessions(data as ChatSession[]);
-      })();
+      fetchSessions();
+      // Trigger cleanup of old chats (fire and forget)
+      supabase.rpc("cleanup_old_chat_sessions" as any).then(() => {});
+      const unsub = onChatSessionChange(fetchSessions);
+      return () => { unsub(); };
     }
-  }, [variant, sessionId, user]);
+  }, [variant, fetchSessions]);
 
   useEffect(() => {
     if (variant !== "dropdown" || !open || !user) return;
-    (async () => {
-      const { data } = await supabase
-        .from("chat_sessions")
-        .select("*")
-        .eq("session_id", sessionId)
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(20);
-      if (data) setSessions(data as ChatSession[]);
-    })();
-  }, [open, sessionId, user, variant]);
+    fetchSessions();
+  }, [open, user, variant, fetchSessions]);
 
   const handleDelete = async (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();

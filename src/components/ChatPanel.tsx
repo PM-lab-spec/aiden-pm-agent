@@ -73,8 +73,8 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
     setMessages(updatedMessages);
     if (fromInput) setInput("");
 
-    // Transition to agents view on first message
-    if (messages.length === 0 && onTransitionToAgents) {
+    // If document is uploaded, transition immediately to agents view
+    if (messages.length === 0 && onTransitionToAgents && activeDocumentName) {
       onTransitionToAgents(text, activeDocumentName);
       return;
     }
@@ -128,6 +128,12 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
             } catch (e) {
               console.error("Failed to save assistant message:", e);
             }
+          }
+          // After first AI response (no document), transition to agents view
+          if (updatedMessages.length === 1 && onTransitionToAgents && !activeDocumentName) {
+            setTimeout(() => {
+              onTransitionToAgents(text, null);
+            }, 1500);
           }
         },
         onError: (error) => { toast.error(error); setIsLoading(false); },
@@ -289,7 +295,13 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
                 accept=".pdf,.docx,.txt,.md,.csv"
                 className="hidden"
                 onChange={(e) => {
-                  if (e.target.files) addDocuments(e.target.files);
+                  if (e.target.files) {
+                    addDocuments(e.target.files);
+                    if (onTransitionToAgents) {
+                      const firstName = e.target.files[0]?.name || "Document";
+                      setTimeout(() => onTransitionToAgents("", firstName), 500);
+                    }
+                  }
                   e.target.value = "";
                 }}
               />

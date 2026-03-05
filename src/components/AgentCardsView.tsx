@@ -327,7 +327,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                               <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
                                 msg.role === "user"
                                   ? "bg-primary text-primary-foreground"
-                                  : "bg-[hsl(240,10%,16%)] text-[hsl(0,0%,85%)]"
+                                  : "bg-white text-gray-900"
                               }`}>
                                 {msg.role === "assistant" ? <ArtifactMarkdown content={msg.content} /> : msg.content}
                               </div>

@@ -190,6 +190,7 @@ serve(async (req) => {
     // Build context from RAG if sessionId provided and OpenAI key available
     let ragContext = "";
     let forcedWarning = "";
+    let activeDocumentName: string | null = null;
 
     if (sessionId) {
       try {
@@ -206,23 +207,23 @@ serve(async (req) => {
           .limit(20);
 
         if (!recentChunksError && recentChunks && recentChunks.length > 0 && lastUserMsg) {
-          const latestDocumentName = recentChunks[0].document_name;
+          activeDocumentName = recentChunks[0].document_name;
           const latestDocumentSample = recentChunks
-            .filter((row: any) => row.document_name === latestDocumentName)
+            .filter((row: any) => row.document_name === activeDocumentName)
             .map((row: any) => row.content)
             .join("\n")
             .slice(0, 4000);
 
           if (shouldCheckDocumentRelevance(lastUserMsg.content)) {
-            const relevance = classifyDocumentRelevance(latestDocumentName, latestDocumentSample);
+            const relevance = classifyDocumentRelevance(activeDocumentName, latestDocumentSample);
             if (relevance === "irrelevant") {
               forcedWarning = NON_PM_WARNING;
-              console.log(`Relevance guard: rejected non-product doc "${latestDocumentName}"`);
+              console.log(`Relevance guard: rejected non-product doc "${activeDocumentName}"`);
             }
           }
         }
 
-        // 2) Only run RAG retrieval when document passed relevance guard
+        // 2) Run RAG retrieval scoped to active (latest) document
         if (!forcedWarning && OPENAI_API_KEY && lastUserMsg) {
           const queryEmbedding = await getQueryEmbedding(lastUserMsg.content, OPENAI_API_KEY);
 
@@ -236,10 +237,35 @@ serve(async (req) => {
           if (error) {
             console.error("RAG search error:", error);
           } else if (chunks && chunks.length > 0) {
-            ragContext = chunks
-              .map((c: any) => `[From "${c.document_name}" (chunk ${c.chunk_index + 1}, relevance: ${(c.similarity * 100).toFixed(0)}%)]\n${c.content}`)
-              .join("\n\n---\n\n");
-            console.log(`RAG: Found ${chunks.length} relevant chunks for query`);
+            const scopedChunks = activeDocumentName
+              ? chunks.filter((c: any) => c.document_name === activeDocumentName)
+              : chunks;
+
+            if (scopedChunks.length > 0) {
+              ragContext = scopedChunks
+                .map((c: any) => `[From "${c.document_name}" (chunk ${c.chunk_index + 1}, relevance: ${(c.similarity * 100).toFixed(0)}%)]\n${c.content}`)
+                .join("\n\n---\n\n");
+              console.log(`RAG: Found ${scopedChunks.length} relevant chunks for active document`);
+            } else if (activeDocumentName) {
+              const { data: fallbackChunks, error: fallbackError } = await supabase
+                .from("document_chunks")
+                .select("document_name, chunk_index, content")
+                .eq("session_id", sessionId)
+                .eq("document_name", activeDocumentName)
+                .order("chunk_index", { ascending: true })
+                .limit(8);
+
+              if (!fallbackError && fallbackChunks && fallbackChunks.length > 0) {
+                ragContext = fallbackChunks
+                  .map((c: any) => `[From "${c.document_name}" (chunk ${c.chunk_index + 1})]\n${c.content}`)
+                  .join("\n\n---\n\n");
+                console.log(`RAG fallback: Loaded ${fallbackChunks.length} chunks from active document`);
+              } else {
+                console.log(`RAG: No chunks found for active document (${activeDocumentName})`);
+              }
+            } else {
+              console.log("RAG: No active document to scope retrieval");
+            }
           } else {
             console.log("RAG: No relevant chunks found");
           }
@@ -295,7 +321,11 @@ serve(async (req) => {
       });
     }
 
-    aiMessages.push(...messages);
+    const sanitizedMessages = (messages || []).filter(
+      (m: any) => !(m?.role === "assistant" && typeof m?.content === "string" && m.content.includes("This document doesn't appear to be product or research-related"))
+    );
+
+    aiMessages.push(...sanitizedMessages);
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

@@ -33,7 +33,7 @@ export function useDocuments() {
 
 const EMBED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const MAX_DOCUMENTS = 2;
+const MAX_DOCUMENTS = 5;
 const SUPPORTED_TYPES = [".pdf", ".docx", ".txt", ".md", ".csv"];
 
 async function embedDocument(content: string, documentName: string, sessionId: string) {

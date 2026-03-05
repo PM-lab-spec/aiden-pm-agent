@@ -66,7 +66,7 @@ export function useChatHistory(sessionId: string) {
     return newId;
   }, [sessionId, loadSessions, user]);
 
-  const saveMessage = useCallback(async (chatSessionId: string, role: "user" | "assistant", content: string) => {
+  const saveMessage = useCallback(async (chatSessionId: string, role: "user" | "assistant", content: string, agentType?: string) => {
     if (savingRef.current && role === "assistant") return;
     
     await supabase
@@ -75,6 +75,7 @@ export function useChatHistory(sessionId: string) {
         chat_session_id: chatSessionId,
         role,
         content,
+        agent_type: agentType || null,
       });
   }, []);
 

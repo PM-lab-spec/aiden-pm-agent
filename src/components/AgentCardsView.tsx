@@ -253,7 +253,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
             try {
-              await chatHistory.saveMessage(sessId, "assistant", assistantSoFar);
+              await chatHistory.saveMessage(sessId, "assistant", assistantSoFar, agentId);
             } catch (e) {
               console.error("Failed to save assistant message:", e);
             }

@@ -352,7 +352,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
                 >
                   {prompt}
                 </button>
-              ))
+              ))}
             </div>
           )}
           <p className="text-xs text-dark-text-hint text-center mt-3">

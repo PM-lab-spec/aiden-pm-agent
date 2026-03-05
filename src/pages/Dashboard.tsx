@@ -71,10 +71,11 @@ export default function Dashboard() {
   };
 
   // Called from ChatPanel when user sends first message or uploads doc
-  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[]) => {
+  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => {
     setAgentFirstQuestion(firstMessage);
     setAgentDocName(docName);
     setInitialMessages(msgs || null);
+    if (chatSessionId) setActiveChatId(chatSessionId);
     setViewMode("agents");
   };
 

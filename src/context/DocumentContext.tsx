@@ -19,6 +19,7 @@ type DocumentContextType = {
   removeDocument: (id: string) => void;
   sessionId: string;
   maxDocuments: number;
+  activeDocumentName: string | null;
 };
 
 const DocumentContext = createContext<DocumentContextType | null>(null);
@@ -176,7 +177,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
   return (
     <DocumentContext.Provider
-      value={{ documents, addDocuments, removeDocument, sessionId: sessionIdRef.current, maxDocuments: MAX_DOCUMENTS }}
+      value={{ documents, addDocuments, removeDocument, sessionId: sessionIdRef.current, maxDocuments: MAX_DOCUMENTS, activeDocumentName: documents.find(d => d.status === "indexed")?.name || null }}
     >
       {children}
     </DocumentContext.Provider>

@@ -323,7 +323,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       chatHistory.updateSessionTitle(chatSessionId, newTitle);
                     }
                   }}
-                  className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,60%)] hover:text-white transition-colors"
+                  className="p-1 rounded hover:bg-dark-surface-hover text-dark-text-muted hover:text-dark-text-heading transition-colors"
                 >
                   <Check className="h-4 w-4" />
                 </button>

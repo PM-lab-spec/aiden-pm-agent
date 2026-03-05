@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { FileText, ListChecks, TrendingUp, BarChart3, Map, MessageCircle, X, Sparkles, Send, Loader2, Square, Plus } from "lucide-react";
+import { FileText, ListChecks, TrendingUp, BarChart3, Map, MessageCircle, X, Sparkles, Send, Loader2, Square, Plus, MessagesSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import ArtifactMarkdown from "@/components/ArtifactMarkdown";
@@ -10,6 +10,15 @@ import { useChatHistory } from "@/hooks/useChatHistory";
 import { toast } from "sonner";
 
 const AGENTS = [
+  {
+    id: "general",
+    label: "General Chat",
+    description: "Ask anything about your document",
+    icon: MessagesSquare,
+    color: "hsl(260 70% 60%)",
+    bgGradient: "linear-gradient(135deg, hsl(260 40% 18%), hsl(260 30% 12%))",
+    borderColor: "hsl(260 40% 25%)",
+  },
   {
     id: "prd",
     label: "PRD",
@@ -64,9 +73,10 @@ interface AgentCardsViewProps {
   firstQuestion: string | null;
   chatSessionId: string | null;
   onChatSessionCreated: (id: string) => void;
+  initialMessages?: { role: "user" | "assistant"; content: string }[] | null;
 }
 
-export default function AgentCardsView({ documentName, firstQuestion, chatSessionId, onChatSessionCreated }: AgentCardsViewProps) {
+export default function AgentCardsView({ documentName, firstQuestion, chatSessionId, onChatSessionCreated, initialMessages }: AgentCardsViewProps) {
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [agentMessages, setAgentMessages] = useState<Record<string, Message[]>>({});
   const [agentInputs, setAgentInputs] = useState<Record<string, string>>({});
@@ -78,6 +88,22 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const chatHistory = useChatHistory(sessionId);
 
   const headerText = documentName || firstQuestion || "New Chat";
+  const initializedRef = useRef(false);
+
+  // Seed initial messages into General Chat and auto-expand it
+  useEffect(() => {
+    if (initializedRef.current) return;
+    if (initialMessages && initialMessages.length > 0) {
+      initializedRef.current = true;
+      const seeded: Message[] = initialMessages.map(m => ({
+        id: crypto.randomUUID(),
+        role: m.role,
+        content: m.content,
+      }));
+      setAgentMessages(prev => ({ ...prev, general: seeded }));
+      setExpandedAgent("general");
+    }
+  }, [initialMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

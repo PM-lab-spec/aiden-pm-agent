@@ -360,6 +360,9 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
           <p className="text-xs text-[hsl(0,0%,55%)] text-center mt-3">
             Aiden — Open-source AI assistant for Product Managers
           </p>
+          <p className="text-[10px] text-[hsl(0,0%,40%)] text-center mt-1">
+            Aiden can make mistakes. Check the important info.
+          </p>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Send, Loader2, Square, Plus, Upload } from "lucide-react";
+import { Send, Loader2, Square, Plus, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ArtifactMarkdown from "@/components/ArtifactMarkdown";
@@ -205,11 +205,18 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in">
-            <div className="text-center space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">
-                Ready to build?
+          <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in px-6">
+            <div className="text-center max-w-2xl mx-auto w-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI-Powered Product Management
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight leading-tight mb-4">
+                What can I help you build?
               </h2>
+              <p className="text-lg text-[hsl(0,0%,55%)] mb-2 max-w-lg mx-auto">
+                Generate PRDs, user stories, roadmaps, and more — all grounded in your real data.
+              </p>
             </div>
           </div>
         ) : (
@@ -274,7 +281,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Aiden to analyze your product document"
+              placeholder="Ask Aiden anything about your products..."
               rows={2}
               className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-white placeholder:text-[hsl(0,0%,45%)] focus:outline-none min-h-[60px] max-h-[120px]"
               onInput={(e) => {
@@ -332,8 +339,26 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               </div>
             </div>
           </div>
+          {messages.length === 0 && (
+            <div className="flex flex-wrap gap-2 justify-center mt-3">
+              {[
+                "Generate a PRD",
+                "Create user stories",
+                "Suggest roadmap priorities",
+                "Summarize feedback",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => setInput(prompt)}
+                  className="px-3 py-1.5 rounded-full border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,14%)] text-xs text-[hsl(0,0%,55%)] hover:text-white hover:border-primary/30 transition-colors"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="text-xs text-[hsl(0,0%,55%)] text-center mt-3">
-            Upload a PRD, spec document, or research file to get started
+            Aiden — Open-source AI assistant for Product Managers
           </p>
         </div>
       </div>

@@ -28,6 +28,8 @@ export function useDocuments() {
 }
 
 const EMBED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const SUPPORTED_TYPES = [".pdf", ".docx", ".txt", ".md", ".csv"];
 
 async function embedDocument(content: string, documentName: string, sessionId: string) {
   const resp = await fetch(EMBED_URL, {
@@ -49,11 +51,23 @@ async function embedDocument(content: string, documentName: string, sessionId: s
 
 export function DocumentProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
-  // Generate a unique session ID per app session
   const sessionIdRef = useRef(crypto.randomUUID());
 
   const addDocuments = useCallback((fileList: FileList) => {
     Array.from(fileList).forEach((file) => {
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`"${file.name}" is too large (max 10MB)`);
+        return;
+      }
+
+      // Validate file type
+      const ext = "." + file.name.split(".").pop()?.toLowerCase();
+      if (!SUPPORTED_TYPES.includes(ext)) {
+        toast.error(`"${file.name}" is not a supported file type`);
+        return;
+      }
+
       const id = crypto.randomUUID();
       const doc: DocumentFile = {
         id,
@@ -77,6 +91,11 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             text = await file.text();
           }
 
+          // Validate extracted content
+          if (!text || text.trim().length < 50) {
+            throw new Error("Could not extract meaningful text from this file");
+          }
+
           setDocuments((prev) =>
             prev.map((d) =>
               d.id === id ? { ...d, content: text, status: "indexing" } : d
@@ -94,14 +113,14 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
           );
 
           toast.success(`"${file.name}" indexed (${result.chunksCreated} chunks)`);
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error processing file:", file.name, err);
           setDocuments((prev) =>
             prev.map((d) =>
               d.id === id ? { ...d, status: "error" } : d
             )
           );
-          toast.error(`Failed to index "${file.name}"`);
+          toast.error(`Failed to index "${file.name}": ${err.message || "Unknown error"}`);
         }
       };
       processFile();

@@ -46,10 +46,19 @@ When generating artifacts, always use these structured formats:
 - Sample Size & Duration
 - Success Criteria
 
+**Stakeholder Update Format:**
+- Start with "**Subject:** [clear subject line]"
+- Use "Hi Team," or "Dear Stakeholders," as greeting
+- Structure with: Summary, Key Updates, Metrics, Next Steps, Risks
+- End with a sign-off
+
 Guidelines:
 - Be specific and actionable, not vague
 - Use real PM terminology
 - Structure outputs with clear markdown formatting
+- For User Stories and Metrics Plans, ALWAYS use markdown tables with clear column headers
+- For Roadmaps, ALWAYS use ## Now, ## Next, ## Later as section headers
+- For Stakeholder Updates, ALWAYS start with "**Subject:**" line
 - When document context is provided, ALWAYS use it to ground your answers — cite specific details from the documents
 - Ask clarifying questions when the request is ambiguous
 - Keep responses concise but thorough`;

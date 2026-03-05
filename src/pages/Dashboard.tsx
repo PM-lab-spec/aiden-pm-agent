@@ -15,16 +15,22 @@ export default function Dashboard() {
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const promptHandledRef = useRef(false);
 
-  // Auto-send prompt from homepage
+  // Auto-send prompt from homepage (once only)
   useEffect(() => {
+    if (promptHandledRef.current) return;
     const prompt = searchParams.get("prompt");
     if (prompt) {
+      promptHandledRef.current = true;
+      // Clear the URL param first
       setSearchParams({}, { replace: true });
-      // Small delay to let ChatPanel mount
-      setTimeout(() => chatRef.current?.sendMessage(prompt), 300);
+      // Delay to let ChatPanel mount
+      setTimeout(() => {
+        chatRef.current?.sendMessage(prompt);
+      }, 400);
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
     chatRef.current?.sendMessage(prompt);

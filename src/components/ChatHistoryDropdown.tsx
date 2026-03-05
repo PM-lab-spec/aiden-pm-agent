@@ -106,18 +106,29 @@ export default function ChatHistoryDropdown({
           <p className="px-2.5 py-2 text-xs text-[hsl(0,0%,40%)]">No recent chats</p>
         ) : (
           sessions.map((s) => (
-            <button
+            <div
               key={s.id}
-              onClick={() => onSelectSession(s.id)}
-              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors group ${
+              className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors group ${
                 activeChatId === s.id
                   ? "bg-[hsl(240,10%,20%)] text-white"
                   : "hover:bg-[hsl(240,10%,18%)] text-[hsl(0,0%,70%)]"
               }`}
             >
-              <FileText className="h-4 w-4 shrink-0 opacity-60" />
-              <span className="truncate flex-1 text-left">{s.title}</span>
-            </button>
+              <button
+                onClick={() => onSelectSession(s.id)}
+                className="flex items-center gap-2.5 flex-1 min-w-0"
+              >
+                <FileText className="h-4 w-4 shrink-0 opacity-60" />
+                <span className="truncate flex-1 text-left">{s.title}</span>
+              </button>
+              <button
+                onClick={(e) => handleDelete(e, s.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-all shrink-0"
+                title="Delete chat"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ))
         )}
       </nav>

@@ -495,7 +495,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                         }
                       }}
                       placeholder={`Ask about ${agent.label.toLowerCase()}...`}
-                      className="flex-1 bg-transparent text-sm text-white placeholder:text-[hsl(0,0%,40%)] focus:outline-none"
+                      className="flex-1 bg-transparent text-sm text-dark-text-heading placeholder:text-dark-text-subtle focus:outline-none"
                     />
                     {isThisLoading ? (
                       <Button onClick={handleStop} size="icon" variant="outline" className="rounded-lg h-8 w-8 shrink-0">

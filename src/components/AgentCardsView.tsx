@@ -430,7 +430,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                           <button
                             key={action}
                             onClick={() => handleQuickAction(agent.id, action)}
-                            className="text-sm text-[hsl(0,0%,55%)] hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-[hsl(0,0%,20%)] hover:border-[hsl(0,0%,30%)]"
+                            className="text-sm text-dark-text-hint hover:text-dark-text-heading transition-colors px-3 py-1.5 rounded-lg border border-dark-border hover:border-dark-border"
                           >
                             {action === "generate" ? `Generate ${agent.label.toLowerCase()}` :
                              action === "insights" ? `Key insights for ${agent.label.toLowerCase()}` :

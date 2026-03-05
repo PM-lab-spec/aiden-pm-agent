@@ -73,7 +73,7 @@ interface AgentCardsViewProps {
   firstQuestion: string | null;
   chatSessionId: string | null;
   onChatSessionCreated: (id: string) => void;
-  initialMessages?: { role: "user" | "assistant"; content: string }[] | null;
+  initialMessages?: { role: "user" | "assistant"; content: string; agent_type?: string }[] | null;
 }
 
 export default function AgentCardsView({ documentName, firstQuestion, chatSessionId, onChatSessionCreated, initialMessages }: AgentCardsViewProps) {
@@ -129,18 +129,26 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
 
   const initializedRef = useRef(false);
 
-  // Seed initial messages into General Chat and auto-expand it
+  // Seed initial messages into their respective agents and auto-expand the first one with messages
   useEffect(() => {
     if (initializedRef.current) return;
     if (initialMessages && initialMessages.length > 0) {
       initializedRef.current = true;
-      const seeded: Message[] = initialMessages.map(m => ({
-        id: crypto.randomUUID(),
-        role: m.role,
-        content: m.content,
-      }));
-      setAgentMessages({ general: seeded });
-      setExpandedAgent("general");
+      // Group messages by agent_type
+      const grouped: Record<string, Message[]> = {};
+      for (const m of initialMessages) {
+        const agentId = m.agent_type || "general";
+        if (!grouped[agentId]) grouped[agentId] = [];
+        grouped[agentId].push({
+          id: crypto.randomUUID(),
+          role: m.role,
+          content: m.content,
+        });
+      }
+      setAgentMessages(grouped);
+      // Expand the first agent that has messages
+      const firstAgentWithMsgs = AGENTS.find(a => grouped[a.id]?.length > 0);
+      setExpandedAgent(firstAgentWithMsgs?.id || "general");
     }
   }, [initialMessages]);
 
@@ -205,7 +213,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
     let sessId: string;
     try {
       sessId = await ensureSession(text);
-      await chatHistory.saveMessage(sessId, "user", text);
+      await chatHistory.saveMessage(sessId, "user", text, agentId);
     } catch (e) {
       console.error("Failed to persist:", e);
       toast.error("Failed to save message.");
@@ -253,7 +261,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
             try {
-              await chatHistory.saveMessage(sessId, "assistant", assistantSoFar);
+              await chatHistory.saveMessage(sessId, "assistant", assistantSoFar, agentId);
             } catch (e) {
               console.error("Failed to save assistant message:", e);
             }

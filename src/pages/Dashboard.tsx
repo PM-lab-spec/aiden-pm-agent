@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"home" | "agents" | "resources">("home");
   const [agentDocName, setAgentDocName] = useState<string | null>(null);
   const [agentFirstQuestion, setAgentFirstQuestion] = useState<string | null>(null);
-  const [initialMessages, setInitialMessages] = useState<{ role: "user" | "assistant"; content: string }[] | null>(null);
+  const [initialMessages, setInitialMessages] = useState<{ role: "user" | "assistant"; content: string; agent_type?: string }[] | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,6 +80,7 @@ export default function Dashboard() {
     const restoredMessages = (messages || []).map((m: any) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
+      agent_type: m.agent_type || "general",
     }));
 
     setActiveChatId(chatSessionId);
@@ -89,7 +90,7 @@ export default function Dashboard() {
     setViewMode("agents");
   }, []);
 
-  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => {
+  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string; agent_type?: string }[], chatSessionId?: string | null) => {
     setAgentFirstQuestion(firstMessage);
     setAgentDocName(docName);
     setInitialMessages(msgs || null);

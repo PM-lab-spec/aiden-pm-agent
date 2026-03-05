@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Send, Loader2, Square } from "lucide-react";
+import { Send, Loader2, Square, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ArtifactMarkdown from "@/components/ArtifactMarkdown";
@@ -15,31 +15,28 @@ type Message = {
   content: string;
 };
 
-const SUGGESTED_PROMPTS = [
-  "Summarize the key pain points from uploaded feedback",
-  "Generate a PRD for the new onboarding flow",
-  "Create user stories for the checkout redesign",
-  "Suggest roadmap priorities for next quarter",
-];
-
 export type ChatPanelHandle = {
   sendMessage: (text: string) => void;
   clearMessages: () => void;
   switchToSession: (chatSessionId: string) => void;
 };
 
-const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
+interface ChatPanelProps {
+  userName?: string;
+}
+
+const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "there" }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const { sessionId, activeDocumentName } = useDocuments();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { sessionId, activeDocumentName, addDocuments } = useDocuments();
   const chatHistory = useChatHistory(sessionId);
   const activeChatIdRef = useRef<string | null>(null);
 
-  // Load sessions on mount
   useEffect(() => {
     chatHistory.loadSessions();
   }, [chatHistory.loadSessions]);
@@ -78,7 +75,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
 
     let chatId: string;
     try {
-      // Persist user message
       chatId = await ensureSession(text);
       await chatHistory.saveMessage(chatId, "user", text);
       if (updatedMessages.filter(m => m.role === "user").length === 1) {
@@ -117,7 +113,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
         onDelta: upsertAssistant,
         onDone: async () => {
           setIsLoading(false);
-          // Persist final assistant message
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
             try {
@@ -141,7 +136,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const switchToSession = useCallback(async (chatSessionId: string) => {
     activeChatIdRef.current = chatSessionId;
     chatHistory.setActiveChatId(chatSessionId);
-
     try {
       const msgs = await chatHistory.loadMessages(chatSessionId);
       setMessages(msgs);
@@ -184,9 +178,8 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     }
   };
 
-  const handlePromptClick = (prompt: string) => {
-    setInput(prompt);
-    textareaRef.current?.focus();
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -194,25 +187,11 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-8 animate-fade-in">
+          <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in">
             <div className="text-center space-y-3">
-              <h2 className="text-2xl font-semibold text-foreground">
-                What can I help you build?
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+                Ready to build, {userName}?
               </h2>
-              <p className="text-muted-foreground max-w-md">
-                Ask me to generate PRDs, user stories, roadmaps, or analyze your product documents.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
-              {SUGGESTED_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => handlePromptClick(prompt)}
-                  className="text-left p-3 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors text-sm text-foreground"
-                >
-                  {prompt}
-                </button>
-              ))}
             </div>
           </div>
         ) : (
@@ -226,7 +205,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
                   transition={{ duration: 0.25 }}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
+                  <div className={`max-w-[85%]`}>
                     <div
                       className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === "user"
@@ -269,42 +248,69 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-border p-4">
-        <div className="max-w-3xl mx-auto flex gap-3 items-end">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Aiden anything about your products..."
-            rows={1}
-            className="flex-1 resize-none rounded-xl border border-input bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[120px]"
-            style={{ height: "auto", overflow: "hidden" }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = Math.min(target.scrollHeight, 120) + "px";
-            }}
-          />
-          {isLoading ? (
-            <Button
-              onClick={handleStop}
-              size="icon"
-              variant="outline"
-              className="rounded-xl h-[44px] w-[44px] shrink-0"
-            >
-              <Square className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              size="icon"
-              className="rounded-xl h-[44px] w-[44px] shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
+      <div className="p-4 pb-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask Aiden to analyze your product document"
+              rows={2}
+              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[60px] max-h-[120px]"
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = Math.min(target.scrollHeight, 120) + "px";
+              }}
+            />
+            {/* Bottom bar with + button and send */}
+            <div className="flex items-center justify-between px-3 pb-3">
+              <button
+                onClick={handleFileUpload}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                title="Upload document"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.docx,.txt,.md,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) addDocuments(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <div className="flex items-center gap-1">
+                {isLoading ? (
+                  <Button
+                    onClick={handleStop}
+                    size="icon"
+                    variant="outline"
+                    className="rounded-lg h-8 w-8"
+                  >
+                    <Square className="h-3 w-3" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                    size="icon"
+                    className="rounded-lg h-8 w-8"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            Upload a PRD, spec document, or research file to get started
+          </p>
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"home" | "agents" | "resources">("home");
   const [agentDocName, setAgentDocName] = useState<string | null>(null);
   const [agentFirstQuestion, setAgentFirstQuestion] = useState<string | null>(null);
-  const [initialMessages, setInitialMessages] = useState<{ role: "user" | "assistant"; content: string }[] | null>(null);
+  const [initialMessages, setInitialMessages] = useState<{ role: "user" | "assistant"; content: string; agent_type?: string }[] | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
   const location = useLocation();

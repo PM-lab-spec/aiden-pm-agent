@@ -207,9 +207,9 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in px-6">
             <div className="text-center max-w-2xl mx-auto w-full">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-medium mb-6 border border-white/10">
                 <Sparkles className="h-3.5 w-3.5" />
-                AI-Powered Product Management
+                AI-Powered Product Management Agent
               </div>
               <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight leading-tight mb-4">
                 What can I help you build?

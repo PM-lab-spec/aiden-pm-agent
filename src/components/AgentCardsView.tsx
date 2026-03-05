@@ -353,7 +353,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
         <Button
           variant="outline"
           size="sm"
-          className="border-[hsl(0,0%,20%)] bg-transparent text-[hsl(0,0%,70%)] hover:bg-[hsl(240,10%,18%)]"
+          className="border-dark-border bg-transparent text-dark-text hover:bg-dark-surface-hover"
           onClick={() => fileInputRef.current?.click()}
         >
           <Plus className="h-4 w-4 mr-1.5" />

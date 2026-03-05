@@ -113,26 +113,34 @@ function classifyDocumentRelevance(documentName: string, sampleText: string): "r
   const name = documentName.toLowerCase();
   const text = sampleText.toLowerCase();
 
+  // Hard reject: filename clearly indicates a resume/CV
   const hardIrrelevantNameCues = ["resume", "cv", "curriculum vitae", "cover letter"];
   if (hardIrrelevantNameCues.some((cue) => name.includes(cue))) return "irrelevant";
 
+  // If any PM-relevant term exists, it's relevant — always prefer accepting
   const relevantCues = [
     "prd", "product requirements", "feature", "roadmap", "sprint", "backlog", "customer feedback",
-    "user research", "market research", "competitive", "go to market", "kpi", "okr", "retention", "churn",
-    "experiment", "ab test", "persona", "support ticket", "product strategy", "product discovery"
-  ];
-
-  const irrelevantCues = [
-    "curriculum vitae", "work experience", "professional summary", "education", "skills", "certifications",
-    "linkedin", "phone", "email", "objective", "hobbies", "references"
+    "user research", "market research", "competitive", "go to market", "go-to-market", "kpi", "okr",
+    "retention", "churn", "experiment", "ab test", "a/b test", "persona", "support ticket",
+    "product strategy", "product discovery", "product manager", "stakeholder", "user story",
+    "acceptance criteria", "mvp", "minimum viable", "revenue model", "target market",
+    "product team", "product development", "product planning", "product idea",
+    "market analysis", "product opportunity", "product decision"
   ];
 
   const relevantHits = relevantCues.reduce((acc, cue) => acc + (text.includes(cue) ? 1 : 0), 0);
-  const irrelevantHits = irrelevantCues.reduce((acc, cue) => acc + (text.includes(cue) ? 1 : 0), 0);
+  if (relevantHits >= 1) return "relevant";
 
-  if (irrelevantHits >= 3 && relevantHits === 0) return "irrelevant";
-  if (relevantHits >= 2) return "relevant";
-  if (irrelevantHits >= 2 && relevantHits < 2) return "irrelevant";
+  // Only reject if content has VERY strong resume-specific phrases (not generic words)
+  const resumeOnlyPhrases = [
+    "work experience", "professional summary", "curriculum vitae",
+    "years of experience", "job title", "employment history",
+    "career objective", "references available upon request"
+  ];
+
+  const resumeHits = resumeOnlyPhrases.reduce((acc, cue) => acc + (text.includes(cue) ? 1 : 0), 0);
+  if (resumeHits >= 2) return "irrelevant";
+
   return "unknown";
 }
 

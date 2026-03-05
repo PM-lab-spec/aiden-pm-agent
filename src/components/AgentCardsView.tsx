@@ -470,7 +470,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       </AnimatePresence>
                       {isThisLoading && (
                         <div className="flex justify-start">
-                          <div className="bg-[hsl(240,10%,16%)] px-4 py-3 rounded-xl flex items-center gap-2 text-sm text-[hsl(0,0%,55%)]">
+                          <div className="bg-dark-surface px-4 py-3 rounded-xl flex items-center gap-2 text-sm text-dark-text-hint">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Thinking...
                           </div>

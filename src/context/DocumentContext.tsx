@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { extractPdfText, isPdf } from "@/lib/pdfExtractor";
+import { extractDocxText, isDocx } from "@/lib/docxExtractor";
 
 export type DocumentFile = {
   id: string;
@@ -47,6 +48,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
           let text: string;
           if (isPdf(file)) {
             text = await extractPdfText(file);
+          } else if (isDocx(file)) {
+            text = await extractDocxText(file);
           } else {
             text = await file.text();
           }

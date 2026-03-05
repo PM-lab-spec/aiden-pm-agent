@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Upload, FileText, X, File, Loader2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDocuments } from "@/context/DocumentContext";
+import { toast } from "sonner";
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
@@ -10,7 +11,8 @@ function formatFileSize(bytes: number) {
 }
 
 export default function DocumentSidebar() {
-  const { documents, addDocuments, removeDocument } = useDocuments();
+  const { documents, addDocuments, removeDocument, maxDocuments } = useDocuments();
+  const atLimit = documents.length >= maxDocuments;
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,22 +34,24 @@ export default function DocumentSidebar() {
       {/* Upload zone */}
       <div className="p-4">
         <div
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragOver={(e) => { if (!atLimit) { e.preventDefault(); setIsDragOver(true); } }}
           onDragLeave={() => setIsDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-            isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-secondary/30"
+          onDrop={(e) => { if (atLimit) return; handleDrop(e); }}
+          onClick={() => { if (atLimit) { toast.error(`Maximum ${maxDocuments} documents allowed. Remove a document first.`); return; } fileInputRef.current?.click(); }}
+          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+            atLimit
+              ? "border-border/50 bg-muted/20 cursor-not-allowed opacity-60"
+              : isDragOver
+              ? "border-primary bg-primary/5 cursor-pointer"
+              : "border-border hover:border-primary/50 hover:bg-secondary/30 cursor-pointer"
           }`}
         >
           <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-xs text-muted-foreground">
-            Drop files here or <span className="text-primary font-medium">browse</span>
+            {atLimit ? `Limit reached (${maxDocuments} docs)` : <>Drop files here or <span className="text-primary font-medium">browse</span></>}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            PDF, DOCX, TXT, MD
+            {atLimit ? "Remove a document to upload more" : "PDF, DOCX, TXT, MD"}
           </p>
         </div>
         <input

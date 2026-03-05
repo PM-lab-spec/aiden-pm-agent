@@ -82,6 +82,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const [agentInputs, setAgentInputs] = useState<Record<string, string>>({});
   const [loadingAgent, setLoadingAgent] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sendingRef = useRef(false);
   const sessionIdRef = useRef<string | null>(chatSessionId);
   const creatingSessionRef = useRef<Promise<string> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -189,7 +190,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   };
 
   const doSend = async (agentId: string, text: string) => {
-    if (loadingAgent) return;
+    if (loadingAgent || sendingRef.current) return;
+    sendingRef.current = true;
     const agent = AGENTS.find(a => a.id === agentId)!;
 
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text };
@@ -247,6 +249,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
         onDelta: upsertAssistant,
         onDone: async () => {
           setLoadingAgent(null);
+          sendingRef.current = false;
           if (assistantSoFar && !assistantSaved) {
             assistantSaved = true;
             try {
@@ -256,10 +259,11 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
             }
           }
         },
-        onError: (error) => { toast.error(error); setLoadingAgent(null); },
+        onError: (error) => { toast.error(error); setLoadingAgent(null); sendingRef.current = false; },
         signal: controller.signal,
       });
     } catch (e: any) {
+      sendingRef.current = false;
       if (e.name !== "AbortError") {
         toast.error("Failed to connect to AI.");
         setLoadingAgent(null);
@@ -307,7 +311,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       setIsEditingTitle(false);
                     }
                   }}
-                  className="bg-transparent border border-[hsl(0,0%,30%)] rounded-md px-2 py-1 text-white font-semibold text-lg focus:outline-none focus:border-primary"
+                  className="bg-transparent border border-dark-border rounded-md px-2 py-1 text-dark-text-heading font-semibold text-lg focus:outline-none focus:border-primary"
                   autoFocus
                 />
                 <button
@@ -319,21 +323,21 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       chatHistory.updateSessionTitle(chatSessionId, newTitle);
                     }
                   }}
-                  className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,60%)] hover:text-white transition-colors"
+                  className="p-1 rounded hover:bg-dark-surface-hover text-dark-text-muted hover:text-dark-text-heading transition-colors"
                 >
                   <Check className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="text-white font-semibold text-lg">{headerText}</h2>
+                <h2 className="text-dark-text-heading font-semibold text-lg">{headerText}</h2>
                 {!displayDocName && (
                   <button
                     onClick={() => {
                       setEditTitleValue(customTitle || firstQuestion || "");
                       setIsEditingTitle(true);
                     }}
-                    className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,40%)] hover:text-white transition-colors"
+                    className="p-1 rounded hover:bg-dark-surface-hover text-dark-text-subtle hover:text-dark-text-heading transition-colors"
                     title="Edit title"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -342,14 +346,14 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
               </div>
             )}
             {displayDocName && (
-              <p className="text-sm text-[hsl(0,0%,50%)]">Uploaded {new Date().toLocaleDateString()}</p>
+              <p className="text-sm text-dark-text-muted">Uploaded {new Date().toLocaleDateString()}</p>
             )}
           </div>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="border-[hsl(0,0%,20%)] bg-transparent text-[hsl(0,0%,70%)] hover:bg-[hsl(240,10%,18%)]"
+          className="border-dark-border bg-transparent text-dark-text hover:bg-dark-surface-hover"
           onClick={() => fileInputRef.current?.click()}
         >
           <Plus className="h-4 w-4 mr-1.5" />
@@ -395,13 +399,13 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       <agent.icon className="h-5 w-5" style={{ color: agent.color }} />
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold">{agent.label}</h3>
-                      <p className="text-sm text-[hsl(0,0%,55%)]">{agent.description}</p>
+                     <h3 className="text-dark-text-heading font-semibold">{agent.label}</h3>
+                      <p className="text-sm text-dark-text-hint">{agent.description}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setExpandedAgent(null)}
-                    className="flex items-center gap-1.5 text-sm text-[hsl(0,0%,60%)] hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-dark-text-muted hover:text-dark-text-heading transition-colors"
                   >
                     <X className="h-4 w-4" />
                     Close
@@ -416,8 +420,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                         <Sparkles className="h-6 w-6" style={{ color: agent.color }} />
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-medium">Ask about {agent.label.toLowerCase()}</p>
-                        <p className="text-sm text-[hsl(0,0%,50%)] mt-1">
+                         <p className="text-dark-text-heading font-medium">Ask about {agent.label.toLowerCase()}</p>
+                        <p className="text-sm text-dark-text-muted mt-1">
                           Based on: {displayDocName || firstQuestion || "your input"}
                         </p>
                       </div>
@@ -426,7 +430,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                           <button
                             key={action}
                             onClick={() => handleQuickAction(agent.id, action)}
-                            className="text-sm text-[hsl(0,0%,55%)] hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-[hsl(0,0%,20%)] hover:border-[hsl(0,0%,30%)]"
+                            className="text-sm text-dark-text-hint hover:text-dark-text-heading transition-colors px-3 py-1.5 rounded-lg border border-dark-border hover:border-dark-border"
                           >
                             {action === "generate" ? `Generate ${agent.label.toLowerCase()}` :
                              action === "insights" ? `Key insights for ${agent.label.toLowerCase()}` :
@@ -466,7 +470,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       </AnimatePresence>
                       {isThisLoading && (
                         <div className="flex justify-start">
-                          <div className="bg-[hsl(240,10%,16%)] px-4 py-3 rounded-xl flex items-center gap-2 text-sm text-[hsl(0,0%,55%)]">
+                          <div className="bg-dark-surface px-4 py-3 rounded-xl flex items-center gap-2 text-sm text-dark-text-hint">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Thinking...
                           </div>
@@ -479,7 +483,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
 
                 {/* Input */}
                 <div className="p-4">
-                  <div className="flex items-center gap-2 rounded-xl border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,10%)] px-4 py-2">
+                  <div className="flex items-center gap-2 rounded-xl border border-dark-border bg-dark-input-bg-deep px-4 py-2">
                     <input
                       type="text"
                       value={inputVal}
@@ -491,7 +495,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                         }
                       }}
                       placeholder={`Ask about ${agent.label.toLowerCase()}...`}
-                      className="flex-1 bg-transparent text-sm text-white placeholder:text-[hsl(0,0%,40%)] focus:outline-none"
+                      className="flex-1 bg-transparent text-sm text-dark-text-heading placeholder:text-dark-text-subtle focus:outline-none"
                     />
                     {isThisLoading ? (
                       <Button onClick={handleStop} size="icon" variant="outline" className="rounded-lg h-8 w-8 shrink-0">
@@ -529,16 +533,16 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                     <agent.icon className="h-5 w-5" style={{ color: agent.color }} />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold">{agent.label}</h3>
-                    <p className="text-sm text-[hsl(0,0%,55%)]">{agent.description}</p>
+                     <h3 className="text-dark-text-heading font-semibold">{agent.label}</h3>
+                    <p className="text-sm text-dark-text-hint">{agent.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-[hsl(0,0%,50%)] group-hover:text-white transition-colors">
+                <div className="flex items-center gap-1.5 text-sm text-dark-text-muted group-hover:text-dark-text-heading transition-colors">
                   <MessageCircle className="h-4 w-4" />
                   Chat
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-[hsl(0,0%,45%)]">
+              <div className="mt-4 flex items-center gap-1.5 text-xs text-dark-text-hint">
                 <Sparkles className="h-3.5 w-3.5" />
                 Click Chat to get AI insights
               </div>

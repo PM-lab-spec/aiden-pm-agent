@@ -73,7 +73,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
     setMessages(updatedMessages);
     if (fromInput) setInput("");
 
-    // If document is uploaded, transition immediately to agents view
     if (messages.length === 0 && onTransitionToAgents && activeDocumentName) {
       onTransitionToAgents(text, activeDocumentName, [{ role: "user", content: text }], activeChatIdRef.current);
       return;
@@ -129,7 +128,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               console.error("Failed to save assistant message:", e);
             }
           }
-          // After first AI response (no document), transition to agents view with conversation
           if (updatedMessages.length === 1 && onTransitionToAgents && !activeDocumentName) {
             const convMessages = [
               { role: "user" as const, content: text },
@@ -211,10 +209,10 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
                 <Sparkles className="h-3.5 w-3.5" />
                 AI-Powered Product Management Agent
               </div>
-              <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight leading-tight mb-4">
+              <h2 className="text-4xl sm:text-5xl font-bold text-dark-text-heading tracking-tight leading-tight mb-4">
                 What can I help you build?
               </h2>
-              <p className="text-lg text-[hsl(0,0%,55%)] mb-2 max-w-lg mx-auto">
+              <p className="text-lg text-dark-text-hint mb-2 max-w-lg mx-auto">
                 Generate PRDs, user stories, roadmaps, and more — all grounded in your real data.
               </p>
             </div>
@@ -275,7 +273,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
       {/* Input area */}
       <div className="p-4 pb-6">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,14%)] shadow-lg overflow-hidden">
+          <div className="rounded-2xl border border-dark-border bg-dark-input-bg shadow-lg overflow-hidden">
             <textarea
               ref={textareaRef}
               value={input}
@@ -283,7 +281,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               onKeyDown={handleKeyDown}
               placeholder="Ask Aiden anything about your products..."
               rows={2}
-              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-white placeholder:text-[hsl(0,0%,45%)] focus:outline-none min-h-[60px] max-h-[120px]"
+              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-dark-text-heading placeholder:text-dark-text-hint focus:outline-none min-h-[60px] max-h-[120px]"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = "auto";
@@ -350,17 +348,17 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
                 <button
                   key={prompt}
                   onClick={() => setInput(prompt)}
-                  className="px-3 py-1.5 rounded-full border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,14%)] text-xs text-[hsl(0,0%,55%)] hover:text-white hover:border-primary/30 transition-colors"
+                  className="px-3 py-1.5 rounded-full border border-dark-border bg-dark-input-bg text-xs text-dark-text-hint hover:text-dark-text-heading hover:border-primary/30 transition-colors"
                 >
                   {prompt}
                 </button>
               ))}
             </div>
           )}
-          <p className="text-xs text-[hsl(0,0%,55%)] text-center mt-3">
+          <p className="text-xs text-dark-text-hint text-center mt-3">
             Aiden — Open-source AI assistant for Product Managers
           </p>
-          <p className="text-[10px] text-[hsl(0,0%,40%)] text-center mt-1">
+          <p className="text-[10px] text-dark-text-subtle text-center mt-1">
             Aiden can make mistakes. Check the important info.
           </p>
         </div>

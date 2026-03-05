@@ -29,7 +29,6 @@ export default function Dashboard() {
     navigate("/auth");
   };
 
-  // Auto-open session from URL param
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sessionParam = params.get("session");
@@ -66,14 +65,12 @@ export default function Dashboard() {
   };
 
   const handleSelectSession = useCallback(async (chatSessionId: string) => {
-    // 1. Fetch session metadata to restore document_name
     const { data: session } = await supabase
       .from("chat_sessions")
       .select("*")
       .eq("id", chatSessionId)
       .single();
 
-    // 2. Fetch messages for this session
     const { data: messages } = await supabase
       .from("chat_messages")
       .select("*")
@@ -85,7 +82,6 @@ export default function Dashboard() {
       content: m.content,
     }));
 
-    // 3. Update all state to reflect the selected session
     setActiveChatId(chatSessionId);
     setAgentDocName((session as any)?.document_name || null);
     setAgentFirstQuestion(restoredMessages[0]?.content || null);
@@ -93,7 +89,6 @@ export default function Dashboard() {
     setViewMode("agents");
   }, []);
 
-  // Called from ChatPanel when user sends first message or uploads doc
   const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => {
     setAgentFirstQuestion(firstMessage);
     setAgentDocName(docName);
@@ -112,10 +107,10 @@ export default function Dashboard() {
     <DocumentProvider>
       <div className="flex h-screen bg-background">
         {/* Dark sidebar */}
-        <aside className="w-[220px] bg-[hsl(240,10%,12%)] flex flex-col shrink-0 text-[hsl(0,0%,85%)]">
+        <aside className="w-[220px] bg-dark-surface flex flex-col shrink-0 text-dark-text">
           {/* User button */}
           <div className="p-3">
-            <button className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg hover:bg-[hsl(240,10%,18%)] transition-colors">
+            <button className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg hover:bg-dark-surface-hover transition-colors">
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground uppercase">
                 {userName.charAt(0)}
               </div>
@@ -129,7 +124,7 @@ export default function Dashboard() {
             <button
               onClick={() => { handleNewChat(); }}
               className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                viewMode === "home" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+                viewMode === "home" ? "bg-dark-surface-active text-dark-text-heading" : "hover:bg-dark-surface-hover"
               }`}
             >
               <Home className="h-4 w-4" />
@@ -138,7 +133,7 @@ export default function Dashboard() {
             <button
               onClick={() => setViewMode("resources")}
               className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                viewMode === "resources" ? "bg-[hsl(240,10%,20%)] text-white" : "hover:bg-[hsl(240,10%,18%)]"
+                viewMode === "resources" ? "bg-dark-surface-active text-dark-text-heading" : "hover:bg-dark-surface-hover"
               }`}
             >
               <BookOpen className="h-4 w-4" />
@@ -148,13 +143,13 @@ export default function Dashboard() {
 
           {/* Projects section */}
           <div className="mt-6 px-3">
-            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(0,0%,50%)] mb-1.5">
+            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-dark-text-muted mb-1.5">
               Projects
             </p>
             <nav className="space-y-0.5">
               <button
                 onClick={() => navigate("/all-projects")}
-                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-dark-surface-hover transition-colors"
               >
                 <FolderOpen className="h-4 w-4" />
                 All projects
@@ -164,7 +159,7 @@ export default function Dashboard() {
 
           {/* Recents section */}
           <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(0,0%,50%)] mb-1.5">
+            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-dark-text-muted mb-1.5">
               Recents
             </p>
             <ChatHistoryDropdown
@@ -176,17 +171,17 @@ export default function Dashboard() {
           </div>
 
           {/* Bottom actions */}
-          <div className="p-3 border-t border-[hsl(240,10%,18%)] space-y-0.5">
+          <div className="p-3 border-t border-dark-border-subtle space-y-0.5">
             <button
               onClick={() => navigate("/analytics")}
-              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-dark-surface-hover transition-colors"
             >
               <BarChart3 className="h-4 w-4" />
               Analytics
             </button>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-dark-surface-hover transition-colors"
               title={user?.email || "Sign out"}
             >
               <LogOut className="h-4 w-4" />
@@ -200,7 +195,7 @@ export default function Dashboard() {
           {viewMode === "resources" ? (
             <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin" style={{ background: "var(--gradient-chat-bg)" }}>
               <div className="p-6 max-w-3xl mx-auto w-full">
-                <h2 className="text-xl font-semibold text-white mb-6">Resources</h2>
+                <h2 className="text-xl font-semibold text-dark-text-heading mb-6">Resources</h2>
                 <ArtifactPanel onGenerate={handleGenerate} />
               </div>
             </div>

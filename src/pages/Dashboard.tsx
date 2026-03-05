@@ -37,9 +37,9 @@ export default function Dashboard() {
     params.delete("prompt");
     const cleaned = params.toString();
     window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
-    // Transition to agents view with the prompt as first question
-    setAgentFirstQuestion(prompt);
-    setViewMode("agents");
+    // Send prompt through chat first, don't immediately go to agents
+    // ChatPanel will handle the transition after AI responds
+    chatRef.current?.sendMessage(prompt);
   }, [location.search]);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {

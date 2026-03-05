@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bot, PanelLeftClose, PanelLeft, BarChart3 } from "lucide-react";
+import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
@@ -30,15 +30,26 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
               className="border-r border-border bg-sidebar flex flex-col overflow-hidden shrink-0"
             >
-              {/* Logo */}
-              <div className="p-4 border-b border-border flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Bot className="h-4.5 w-4.5 text-primary-foreground" />
+              {/* Logo + New Chat */}
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                    <Bot className="h-4.5 w-4.5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-bold text-foreground tracking-tight">Aiden</h1>
+                    <p className="text-xs text-muted-foreground">PM Assistant</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-sm font-bold text-foreground tracking-tight">Aiden</h1>
-                  <p className="text-xs text-muted-foreground">PM Assistant</p>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => chatRef.current?.clearMessages()}
+                  title="New Chat"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
 
               {/* Artifact generators */}
@@ -69,7 +80,16 @@ export default function Dashboard() {
               )}
             </Button>
             <span className="text-sm font-medium text-foreground">Chat</span>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-muted-foreground"
+                onClick={() => chatRef.current?.clearMessages()}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="text-xs">New Chat</span>
+              </Button>
               <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="h-3.5 w-3.5" />
                 <span className="text-xs">Analytics</span>

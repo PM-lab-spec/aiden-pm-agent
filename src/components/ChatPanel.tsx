@@ -21,7 +21,7 @@ const SUGGESTED_PROMPTS = [
   "Suggest roadmap priorities for next quarter",
 ];
 
-export type ChatPanelHandle = { sendMessage: (text: string) => void };
+export type ChatPanelHandle = { sendMessage: (text: string) => void; clearMessages: () => void };
 
 const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -86,7 +86,10 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     }
   };
 
-  useImperativeHandle(ref, () => ({ sendMessage: sendMessageDirect }));
+  useImperativeHandle(ref, () => ({
+    sendMessage: sendMessageDirect,
+    clearMessages: () => { setMessages([]); setInput(""); },
+  }));
 
   const handleSend = async () => {
     const trimmed = input.trim();

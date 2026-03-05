@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useRef, type ReactNod
 import { extractPdfText, isPdf } from "@/lib/pdfExtractor";
 import { extractDocxText, isDocx } from "@/lib/docxExtractor";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export type DocumentFile = {
   id: string;
@@ -154,9 +155,24 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
   }, [documents.length, processQueue]);
 
   const removeDocument = useCallback((id: string) => {
+    // Find the document name before removing from state
+    const doc = documents.find((d) => d.id === id);
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     queueRef.current = queueRef.current.filter((q) => q.id !== id);
-  }, []);
+
+    // Delete chunks from database
+    if (doc?.name) {
+      supabase
+        .from("document_chunks")
+        .delete()
+        .eq("session_id", sessionIdRef.current)
+        .eq("document_name", doc.name)
+        .then(({ error }) => {
+          if (error) console.error("Failed to delete chunks:", error);
+          else console.log(`Deleted chunks for "${doc.name}"`);
+        });
+    }
+  }, [documents]);
 
   return (
     <DocumentContext.Provider

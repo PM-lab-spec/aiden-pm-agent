@@ -179,6 +179,7 @@ async function getQueryEmbedding(query: string, apiKey: string): Promise<number[
 
 function getAgentFocusPrompt(agentType: string): string {
   const prompts: Record<string, string> = {
+    general: "\n\nFOCUS: You are in General Chat mode. Help the user with any questions about their document or product. Be conversational, helpful, and provide clear answers.",
     prd: "\n\nFOCUS: You are currently in PRD mode. Prioritize generating and discussing Product Requirements Documents. Structure responses with Problem Statement, User Persona, Goals, Feature Description, User Journey, Requirements, Risks, Success Metrics, and Rollout Plan.",
     stories: "\n\nFOCUS: You are currently in User Stories mode. Prioritize generating and discussing User Stories. Always use the table format: | Epic | User Story ID | User Story | Acceptance Criteria | Priority |",
     research: "\n\nFOCUS: You are currently in Market Research mode. Prioritize competitive analysis, market trends, target market insights, competitive landscape analysis, and actionable market research takeaways.",

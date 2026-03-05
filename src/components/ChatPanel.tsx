@@ -23,7 +23,7 @@ export type ChatPanelHandle = {
 
 interface ChatPanelProps {
   userName?: string;
-  onTransitionToAgents?: (firstMessage: string, docName: string | null) => void;
+  onTransitionToAgents?: (firstMessage: string, docName: string | null, initialMessages?: { role: "user" | "assistant"; content: string }[]) => void;
 }
 
 const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "there", onTransitionToAgents }, ref) => {
@@ -75,7 +75,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
 
     // If document is uploaded, transition immediately to agents view
     if (messages.length === 0 && onTransitionToAgents && activeDocumentName) {
-      onTransitionToAgents(text, activeDocumentName);
+      onTransitionToAgents(text, activeDocumentName, [{ role: "user", content: text }]);
       return;
     }
 
@@ -129,10 +129,14 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               console.error("Failed to save assistant message:", e);
             }
           }
-          // After first AI response (no document), transition to agents view
+          // After first AI response (no document), transition to agents view with conversation
           if (updatedMessages.length === 1 && onTransitionToAgents && !activeDocumentName) {
+            const convMessages = [
+              { role: "user" as const, content: text },
+              { role: "assistant" as const, content: assistantSoFar },
+            ];
             setTimeout(() => {
-              onTransitionToAgents(text, null);
+              onTransitionToAgents(text, null, convMessages);
             }, 1500);
           }
         },

@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"home" | "agents" | "resources">("home");
   const [agentDocName, setAgentDocName] = useState<string | null>(null);
   const [agentFirstQuestion, setAgentFirstQuestion] = useState<string | null>(null);
+  const [initialMessages, setInitialMessages] = useState<{ role: "user" | "assistant"; content: string }[] | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +52,7 @@ export default function Dashboard() {
     setActiveChatId(null);
     setAgentDocName(null);
     setAgentFirstQuestion(null);
+    setInitialMessages(null);
     setViewMode("home");
   };
 
@@ -61,9 +63,10 @@ export default function Dashboard() {
   };
 
   // Called from ChatPanel when user sends first message or uploads doc
-  const handleTransitionToAgents = (firstMessage: string, docName: string | null) => {
+  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[]) => {
     setAgentFirstQuestion(firstMessage);
     setAgentDocName(docName);
+    setInitialMessages(msgs || null);
     setViewMode("agents");
   };
 
@@ -180,6 +183,7 @@ export default function Dashboard() {
                 firstQuestion={agentFirstQuestion}
                 chatSessionId={activeChatId}
                 onChatSessionCreated={handleChatSessionCreated}
+                initialMessages={initialMessages}
               />
             </div>
           ) : (

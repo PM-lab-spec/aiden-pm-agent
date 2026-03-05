@@ -399,8 +399,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       <agent.icon className="h-5 w-5" style={{ color: agent.color }} />
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold">{agent.label}</h3>
-                      <p className="text-sm text-[hsl(0,0%,55%)]">{agent.description}</p>
+                     <h3 className="text-dark-text-heading font-semibold">{agent.label}</h3>
+                      <p className="text-sm text-dark-text-hint">{agent.description}</p>
                     </div>
                   </div>
                   <button

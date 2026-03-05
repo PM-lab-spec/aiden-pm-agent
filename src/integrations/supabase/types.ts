@@ -147,6 +147,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_chat_sessions: { Args: never; Returns: undefined }
       match_document_chunks: {
         Args: {
           match_count?: number

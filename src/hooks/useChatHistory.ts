@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { emitChatSessionChange } from "./useChatSessionEvents";
 
 export type ChatSession = {
   id: string;
@@ -61,6 +62,7 @@ export function useChatHistory(sessionId: string) {
     const newId = (data as any).id;
     setActiveChatId(newId);
     await loadSessions();
+    emitChatSessionChange();
     return newId;
   }, [sessionId, loadSessions, user]);
 
@@ -100,6 +102,7 @@ export function useChatHistory(sessionId: string) {
       .update({ title, updated_at: new Date().toISOString() })
       .eq("id", chatSessionId);
     await loadSessions();
+    emitChatSessionChange();
   }, [loadSessions]);
 
   return {

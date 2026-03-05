@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Home, BookOpen, FolderOpen, User, LogOut, BarChart3, ChevronDown } from "lucide-react";
+import { Home, BookOpen, FolderOpen, LogOut, BarChart3, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
@@ -28,18 +28,26 @@ export default function Dashboard() {
     navigate("/auth");
   };
 
-  // Auto-send prompt from homepage (once only)
+  // Auto-open session from URL param
   useEffect(() => {
-    if (promptHandledRef.current) return;
     const params = new URLSearchParams(location.search);
+    const sessionParam = params.get("session");
+    if (sessionParam && !promptHandledRef.current) {
+      promptHandledRef.current = true;
+      params.delete("session");
+      const cleaned = params.toString();
+      window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
+      handleSelectSession(sessionParam);
+      return;
+    }
+
+    if (promptHandledRef.current) return;
     const prompt = params.get("prompt")?.trim();
     if (!prompt) return;
     promptHandledRef.current = true;
     params.delete("prompt");
     const cleaned = params.toString();
     window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
-    // Send prompt through chat first, don't immediately go to agents
-    // ChatPanel will handle the transition after AI responds
     chatRef.current?.sendMessage(prompt);
   }, [location.search]);
 
@@ -120,13 +128,12 @@ export default function Dashboard() {
               Projects
             </p>
             <nav className="space-y-0.5">
-              <button className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors">
+              <button
+                onClick={() => navigate("/all-projects")}
+                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors"
+              >
                 <FolderOpen className="h-4 w-4" />
                 All projects
-              </button>
-              <button className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-[hsl(240,10%,18%)] transition-colors">
-                <User className="h-4 w-4" />
-                Created by me
               </button>
             </nav>
           </div>

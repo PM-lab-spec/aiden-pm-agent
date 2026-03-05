@@ -260,8 +260,12 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                   onChange={(e) => setEditTitleValue(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      setCustomTitle(editTitleValue.trim() || null);
+                      const newTitle = editTitleValue.trim() || null;
+                      setCustomTitle(newTitle);
                       setIsEditingTitle(false);
+                      if (newTitle && chatSessionId) {
+                        chatHistory.updateSessionTitle(chatSessionId, newTitle);
+                      }
                     } else if (e.key === "Escape") {
                       setIsEditingTitle(false);
                     }
@@ -271,8 +275,12 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                 />
                 <button
                   onClick={() => {
-                    setCustomTitle(editTitleValue.trim() || null);
+                    const newTitle = editTitleValue.trim() || null;
+                    setCustomTitle(newTitle);
                     setIsEditingTitle(false);
+                    if (newTitle && chatSessionId) {
+                      chatHistory.updateSessionTitle(chatSessionId, newTitle);
+                    }
                   }}
                   className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,60%)] hover:text-white transition-colors"
                 >

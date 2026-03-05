@@ -198,9 +198,9 @@ export default function Dashboard() {
         {/* Main area */}
         <div className="flex-1 flex flex-col min-w-0">
           {viewMode === "resources" ? (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin">
               <div className="p-6 max-w-3xl mx-auto w-full">
-                <h2 className="text-xl font-semibold text-foreground mb-4">Resources</h2>
+                <h2 className="text-xl font-semibold text-white mb-6">Resources</h2>
                 <ArtifactPanel onGenerate={handleGenerate} />
               </div>
             </div>

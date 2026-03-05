@@ -79,7 +79,10 @@ Guidelines:
 - Use real PM terminology
 - When document context is provided, first verify it's product-related, then use it to ground your answers — cite specific details from the documents
 - Ask clarifying questions when the request is ambiguous
-- Keep responses concise but thorough`;
+- Keep responses concise but thorough
+- CRITICAL SCOPE RULE: If the user asks for ONE artifact (e.g. only a short use-case document), return ONLY that artifact.
+- Never append extra artifacts (User Stories, Roadmap, Metrics Plan, PRD, Stakeholder Update) unless the user explicitly asks for them.
+- For requests like "short use-case document", keep it brief and focused (single artifact only).`;
 
 const NON_PM_WARNING = `⚠️ **This document doesn't appear to be product or research-related.**
 

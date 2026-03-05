@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -135,14 +136,25 @@ function EmailWrapper({ content }: { content: string }) {
   );
 }
 
-export default function ArtifactMarkdown({ content }: { content: string }) {
+const ArtifactMarkdown = forwardRef<HTMLDivElement, { content: string }>(function ArtifactMarkdown(
+  { content },
+  ref,
+) {
   const type = detectArtifactType(content);
 
   if (type === "stakeholder-update") {
-    return <EmailWrapper content={content} />;
+    return (
+      <div ref={ref}>
+        <EmailWrapper content={content} />
+      </div>
+    );
   }
 
   return (
-    <ReactMarkdown components={richComponents} remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins}>{content}</ReactMarkdown>
+    <div ref={ref}>
+      <ReactMarkdown components={richComponents} remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins}>{content}</ReactMarkdown>
+    </div>
   );
-}
+});
+
+export default ArtifactMarkdown;

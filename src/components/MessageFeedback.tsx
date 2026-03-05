@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,7 +9,10 @@ interface MessageFeedbackProps {
   userQuery?: string;
 }
 
-export default function MessageFeedback({ sessionId, messageContent, userQuery }: MessageFeedbackProps) {
+const MessageFeedback = forwardRef<HTMLDivElement, MessageFeedbackProps>(function MessageFeedback(
+  { sessionId, messageContent, userQuery },
+  ref,
+) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -18,23 +21,30 @@ export default function MessageFeedback({ sessionId, messageContent, userQuery }
     setSubmitting(true);
     setRating(value);
 
-    const { error } = await supabase.from("chat_feedback").insert({
-      session_id: sessionId || "unknown",
-      message_content: messageContent.slice(0, 2000),
-      user_query: userQuery?.slice(0, 1000) || null,
-      rating: value,
-    });
+    try {
+      const { error } = await supabase.from("chat_feedback").insert({
+        session_id: sessionId || "unknown",
+        message_content: messageContent.slice(0, 2000),
+        user_query: userQuery?.slice(0, 1000) || null,
+        rating: value,
+      });
 
-    setSubmitting(false);
-    if (error) {
-      console.error("Feedback error:", error);
+      if (error) {
+        console.error("Feedback error:", error);
+        setRating(null);
+        toast.error("Failed to save feedback");
+      }
+    } catch (error) {
+      console.error("Feedback request failed:", error);
       setRating(null);
       toast.error("Failed to save feedback");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-1 mt-2">
+    <div ref={ref} className="flex items-center gap-1 mt-2">
       <button
         onClick={() => handleFeedback("up")}
         disabled={!!rating}
@@ -68,4 +78,6 @@ export default function MessageFeedback({ sessionId, messageContent, userQuery }
       )}
     </div>
   );
-}
+});
+
+export default MessageFeedback;

@@ -139,14 +139,25 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   };
 
   const switchToSession = useCallback(async (chatSessionId: string) => {
-    const msgs = await chatHistory.loadMessages(chatSessionId);
-    setMessages(msgs);
     activeChatIdRef.current = chatSessionId;
     chatHistory.setActiveChatId(chatSessionId);
+
+    try {
+      const msgs = await chatHistory.loadMessages(chatSessionId);
+      setMessages(msgs);
+    } catch (e) {
+      console.error("Failed to load chat session:", e);
+      toast.error("Failed to load that chat. Please try again.");
+    }
   }, [chatHistory]);
 
   useImperativeHandle(ref, () => ({
-    sendMessage: (text: string) => doSend(text, false),
+    sendMessage: (text: string) => {
+      void doSend(text, false).catch((e) => {
+        console.error("Send message failed:", e);
+        toast.error("Failed to send message.");
+      });
+    },
     clearMessages: () => {
       setMessages([]);
       setInput("");
@@ -159,7 +170,11 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
-    doSend(trimmed, true);
+    void doSend(trimmed, true).catch((e) => {
+      console.error("Handle send failed:", e);
+      toast.error("Failed to send message.");
+      setIsLoading(false);
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

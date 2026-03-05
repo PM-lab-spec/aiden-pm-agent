@@ -205,7 +205,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
     let sessId: string;
     try {
       sessId = await ensureSession(text);
-      await chatHistory.saveMessage(sessId, "user", text);
+      await chatHistory.saveMessage(sessId, "user", text, agentId);
     } catch (e) {
       console.error("Failed to persist:", e);
       toast.error("Failed to save message.");

@@ -43,10 +43,13 @@ export default function ChatHistoryDropdown({
 
   const fetchSessions = useCallback(async () => {
     if (!user) return;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const { data } = await supabase
       .from("chat_sessions")
       .select("*")
       .eq("user_id", user.id)
+      .gte("created_at", thirtyDaysAgo.toISOString())
       .order("updated_at", { ascending: false })
       .limit(20);
     if (data) setSessions(data as ChatSession[]);

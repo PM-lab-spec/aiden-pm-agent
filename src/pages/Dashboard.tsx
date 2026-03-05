@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Home, BookOpen, FolderOpen, LogOut, BarChart3, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,7 @@ import AgentCardsView from "@/components/AgentCardsView";
 import ChatHistoryDropdown from "@/components/ChatHistoryDropdown";
 import { DocumentProvider } from "@/context/DocumentContext";
 import { useChatHistory, type ChatSession } from "@/hooks/useChatHistory";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -64,11 +65,33 @@ export default function Dashboard() {
     setViewMode("home");
   };
 
-  const handleSelectSession = (chatSessionId: string) => {
-    chatRef.current?.switchToSession(chatSessionId);
+  const handleSelectSession = useCallback(async (chatSessionId: string) => {
+    // 1. Fetch session metadata to restore document_name
+    const { data: session } = await supabase
+      .from("chat_sessions")
+      .select("*")
+      .eq("id", chatSessionId)
+      .single();
+
+    // 2. Fetch messages for this session
+    const { data: messages } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("chat_session_id", chatSessionId)
+      .order("created_at", { ascending: true });
+
+    const restoredMessages = (messages || []).map((m: any) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+
+    // 3. Update all state to reflect the selected session
     setActiveChatId(chatSessionId);
+    setAgentDocName((session as any)?.document_name || null);
+    setAgentFirstQuestion(restoredMessages[0]?.content || null);
+    setInitialMessages(restoredMessages.length > 0 ? restoredMessages : null);
     setViewMode("agents");
-  };
+  }, []);
 
   // Called from ChatPanel when user sends first message or uploads doc
   const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => {

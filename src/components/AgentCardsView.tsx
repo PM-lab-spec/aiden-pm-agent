@@ -104,6 +104,28 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
     if (!chatSessionId) creatingSessionRef.current = null;
   }, [chatSessionId]);
 
+  const prevChatSessionIdRef = useRef<string | null | undefined>(undefined);
+
+  // Reset all internal state when switching to a different session
+  useEffect(() => {
+    // Skip the very first render
+    if (prevChatSessionIdRef.current === undefined) {
+      prevChatSessionIdRef.current = chatSessionId;
+    } else if (prevChatSessionIdRef.current !== chatSessionId) {
+      prevChatSessionIdRef.current = chatSessionId;
+      // Full reset
+      setAgentMessages({});
+      setAgentInputs({});
+      setExpandedAgent(null);
+      setLoadingAgent(null);
+      setCustomTitle(null);
+      setIsEditingTitle(false);
+      abortRef.current?.abort();
+      abortRef.current = null;
+      initializedRef.current = false;
+    }
+  }, [chatSessionId]);
+
   const initializedRef = useRef(false);
 
   // Seed initial messages into General Chat and auto-expand it
@@ -116,7 +138,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
         role: m.role,
         content: m.content,
       }));
-      setAgentMessages(prev => ({ ...prev, general: seeded }));
+      setAgentMessages({ general: seeded });
       setExpandedAgent("general");
     }
   }, [initialMessages]);

@@ -542,7 +542,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                   Chat
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-[hsl(0,0%,45%)]">
+              <div className="mt-4 flex items-center gap-1.5 text-xs text-dark-text-hint">
                 <Sparkles className="h-3.5 w-3.5" />
                 Click Chat to get AI insights
               </div>

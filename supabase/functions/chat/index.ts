@@ -133,8 +133,40 @@ serve(async (req) => {
       }
     }
 
+    // Fetch recent negative feedback to improve responses
+    let feedbackContext = "";
+    if (sessionId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const sb = createClient(supabaseUrl, supabaseKey);
+        const { data: negFeedback } = await sb
+          .from("chat_feedback")
+          .select("user_query, message_content")
+          .eq("session_id", sessionId)
+          .eq("rating", "down")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (negFeedback && negFeedback.length > 0) {
+          feedbackContext = negFeedback
+            .map((f: any) => `- User asked: "${f.user_query?.slice(0, 100) || "N/A"}" → Response was marked unhelpful`)
+            .join("\n");
+        }
+      } catch (e) {
+        console.error("Feedback fetch error (non-fatal):", e);
+      }
+    }
+
     // Build the messages array with RAG context
     const aiMessages: any[] = [{ role: "system", content: SYSTEM_PROMPT }];
+
+    if (feedbackContext) {
+      aiMessages.push({
+        role: "system",
+        content: `The user has previously marked these types of responses as unhelpful. Avoid similar patterns:\n${feedbackContext}`,
+      });
+    }
 
     if (ragContext) {
       aiMessages.push({

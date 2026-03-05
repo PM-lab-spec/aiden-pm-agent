@@ -3,6 +3,7 @@ import { Send, Loader2, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ArtifactMarkdown from "@/components/ArtifactMarkdown";
+import MessageFeedback from "@/components/MessageFeedback";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { useDocuments } from "@/context/DocumentContext";
@@ -183,17 +184,26 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
                   transition={{ duration: 0.25 }}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div
-                    className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "surface-card"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <ArtifactMarkdown content={msg.content} />
-                    ) : (
-                      msg.content
+                  <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
+                    <div
+                      className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "surface-card"
+                      }`}
+                    >
+                      {msg.role === "assistant" ? (
+                        <ArtifactMarkdown content={msg.content} />
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
+                    {msg.role === "assistant" && !isLoading && (
+                      <MessageFeedback
+                        sessionId={sessionId}
+                        messageContent={msg.content}
+                        userQuery={messages[messages.indexOf(msg) - 1]?.content}
+                      />
                     )}
                   </div>
                 </motion.div>

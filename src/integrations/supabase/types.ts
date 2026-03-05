@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message_content: string
+          rating: string
+          session_id: string
+          user_query: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_content: string
+          rating: string
+          session_id: string
+          user_query?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_content?: string
+          rating?: string
+          session_id?: string
+          user_query?: string | null
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number

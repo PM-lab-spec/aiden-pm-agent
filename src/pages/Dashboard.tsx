@@ -167,8 +167,8 @@ export default function Dashboard() {
             </div>
           ) : (
             /* Home / Chat view */
-            <div className="flex-1 min-h-0">
-              <ChatPanel ref={chatRef} userName={userName} />
+            <div className="flex-1 min-h-0" style={{ background: "var(--gradient-chat-bg)" }}>
+              <ChatPanel ref={chatRef} />
             </div>
           )}
         </div>

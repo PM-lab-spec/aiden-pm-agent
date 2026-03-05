@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHand
 import { Send, Loader2, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
+import ArtifactMarkdown from "@/components/ArtifactMarkdown";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { useDocuments } from "@/context/DocumentContext";
@@ -191,8 +191,8 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-primary">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <div className="prose prose-sm max-w-none">
+                        <ArtifactMarkdown content={msg.content} />
                       </div>
                     ) : (
                       msg.content

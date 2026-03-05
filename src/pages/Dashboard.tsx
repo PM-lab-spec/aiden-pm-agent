@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
@@ -14,6 +14,17 @@ export default function Dashboard() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-send prompt from homepage
+  useEffect(() => {
+    const prompt = searchParams.get("prompt");
+    if (prompt) {
+      setSearchParams({}, { replace: true });
+      // Small delay to let ChatPanel mount
+      setTimeout(() => chatRef.current?.sendMessage(prompt), 300);
+    }
+  }, []);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
     chatRef.current?.sendMessage(prompt);

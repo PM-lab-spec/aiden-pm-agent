@@ -7,6 +7,7 @@ import MessageFeedback from "@/components/MessageFeedback";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { useDocuments } from "@/context/DocumentContext";
+import { useChatHistory } from "@/hooks/useChatHistory";
 
 type Message = {
   id: string;
@@ -21,7 +22,11 @@ const SUGGESTED_PROMPTS = [
   "Suggest roadmap priorities for next quarter",
 ];
 
-export type ChatPanelHandle = { sendMessage: (text: string) => void; clearMessages: () => void };
+export type ChatPanelHandle = {
+  sendMessage: (text: string) => void;
+  clearMessages: () => void;
+  switchToSession: (chatSessionId: string) => void;
+};
 
 const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,6 +36,13 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { sessionId, activeDocumentName } = useDocuments();
+  const chatHistory = useChatHistory(sessionId);
+  const activeChatIdRef = useRef<string | null>(null);
+
+  // Load sessions on mount
+  useEffect(() => {
+    chatHistory.loadSessions();
+  }, [chatHistory.loadSessions]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,65 +58,37 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     setIsLoading(false);
   };
 
-  const sendMessageDirect = async (text: string) => {
+  const ensureSession = async (firstMessage: string): Promise<string> => {
+    if (activeChatIdRef.current) return activeChatIdRef.current;
+    const id = await chatHistory.createSession(
+      firstMessage.slice(0, 60) + (firstMessage.length > 60 ? "..." : ""),
+      activeDocumentName
+    );
+    activeChatIdRef.current = id;
+    return id;
+  };
+
+  const doSend = async (text: string, fromInput: boolean) => {
     if (isLoading) return;
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
+    if (fromInput) setInput("");
     setIsLoading(true);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
-
-    let assistantSoFar = "";
-    const upsertAssistant = (chunk: string) => {
-      assistantSoFar += chunk;
-      const content = assistantSoFar;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
-        }
-        return [...prev, { id: crypto.randomUUID(), role: "assistant", content }];
-      });
-    };
-
-    try {
-      await streamChat({
-        messages: messagesForAI,
-        sessionId,
-        activeDocumentName,
-        onDelta: upsertAssistant,
-        onDone: () => setIsLoading(false),
-        onError: (error) => { toast.error(error); setIsLoading(false); },
-        signal: controller.signal,
-      });
-    } catch (e: any) {
-      if (e.name !== "AbortError") { toast.error("Failed to connect to AI."); setIsLoading(false); }
+    // Persist user message
+    const chatId = await ensureSession(text);
+    await chatHistory.saveMessage(chatId, "user", text);
+    if (updatedMessages.filter(m => m.role === "user").length === 1) {
+      await chatHistory.updateSessionTitle(chatId, text);
     }
-  };
-
-  useImperativeHandle(ref, () => ({
-    sendMessage: sendMessageDirect,
-    clearMessages: () => { setMessages([]); setInput(""); },
-  }));
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-
-    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: trimmed };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
-    setInput("");
-    setIsLoading(true);
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
 
     let assistantSoFar = "";
+    let assistantSaved = false;
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       const content = assistantSoFar;
@@ -117,19 +101,21 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       });
     };
 
-    const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
-
     try {
       await streamChat({
         messages: messagesForAI,
         sessionId,
         activeDocumentName,
         onDelta: upsertAssistant,
-        onDone: () => setIsLoading(false),
-        onError: (error) => {
-          toast.error(error);
+        onDone: async () => {
           setIsLoading(false);
+          // Persist final assistant message
+          if (assistantSoFar && !assistantSaved) {
+            assistantSaved = true;
+            await chatHistory.saveMessage(chatId, "assistant", assistantSoFar);
+          }
         },
+        onError: (error) => { toast.error(error); setIsLoading(false); },
         signal: controller.signal,
       });
     } catch (e: any) {
@@ -138,6 +124,30 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
         setIsLoading(false);
       }
     }
+  };
+
+  const switchToSession = useCallback(async (chatSessionId: string) => {
+    const msgs = await chatHistory.loadMessages(chatSessionId);
+    setMessages(msgs);
+    activeChatIdRef.current = chatSessionId;
+    chatHistory.setActiveChatId(chatSessionId);
+  }, [chatHistory]);
+
+  useImperativeHandle(ref, () => ({
+    sendMessage: (text: string) => doSend(text, false),
+    clearMessages: () => {
+      setMessages([]);
+      setInput("");
+      activeChatIdRef.current = null;
+      chatHistory.setActiveChatId(null);
+    },
+    switchToSession,
+  }));
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    doSend(trimmed, true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

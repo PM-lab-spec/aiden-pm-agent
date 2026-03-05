@@ -5,16 +5,28 @@ import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
 import ArtifactPanel from "@/components/ArtifactPanel";
+import ChatHistoryDropdown from "@/components/ChatHistoryDropdown";
 import { DocumentProvider } from "@/context/DocumentContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
     chatRef.current?.sendMessage(prompt);
+  };
+
+  const handleNewChat = () => {
+    chatRef.current?.clearMessages();
+    setActiveChatId(null);
+  };
+
+  const handleSelectSession = (chatSessionId: string) => {
+    chatRef.current?.switchToSession(chatSessionId);
+    setActiveChatId(chatSessionId);
   };
 
   return (
@@ -45,7 +57,7 @@ export default function Dashboard() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => chatRef.current?.clearMessages()}
+                  onClick={handleNewChat}
                   title="New Chat"
                 >
                   <Plus className="h-4 w-4" />
@@ -85,11 +97,16 @@ export default function Dashboard() {
                 variant="ghost"
                 size="sm"
                 className="h-8 gap-1.5 text-muted-foreground"
-                onClick={() => chatRef.current?.clearMessages()}
+                onClick={handleNewChat}
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span className="text-xs">New Chat</span>
               </Button>
+              <ChatHistoryDropdown
+                onNewChat={handleNewChat}
+                onSelectSession={handleSelectSession}
+                activeChatId={activeChatId}
+              />
               <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="h-3.5 w-3.5" />
                 <span className="text-xs">Analytics</span>

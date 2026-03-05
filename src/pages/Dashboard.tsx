@@ -178,9 +178,6 @@ export default function Dashboard() {
               <div className="p-6 max-w-3xl mx-auto w-full">
                 <h2 className="text-xl font-semibold text-foreground mb-4">Resources</h2>
                 <ArtifactPanel onGenerate={handleGenerate} />
-                <div className="mt-6">
-                  <DocumentSidebar />
-                </div>
               </div>
             </div>
           ) : viewMode === "agents" ? (

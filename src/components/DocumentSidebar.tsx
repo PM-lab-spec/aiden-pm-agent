@@ -76,7 +76,7 @@ export default function DocumentSidebar() {
             >
               <div className="flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border group">
                 <div className="shrink-0">
-                  {file.status === "uploading" ? (
+                  {file.status === "uploading" || file.status === "indexing" ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   ) : file.status === "error" ? (
                     <AlertCircle className="h-4 w-4 text-destructive" />
@@ -93,8 +93,14 @@ export default function DocumentSidebar() {
                     {file.status === "indexed" && (
                       <span className="text-success ml-1.5">• Indexed</span>
                     )}
+                    {file.status === "indexing" && (
+                      <span className="text-primary ml-1.5">• Indexing...</span>
+                    )}
+                    {file.status === "uploading" && (
+                      <span className="text-muted-foreground ml-1.5">• Reading...</span>
+                    )}
                     {file.status === "error" && (
-                      <span className="text-destructive ml-1.5">• Error reading file</span>
+                      <span className="text-destructive ml-1.5">• Failed</span>
                     )}
                   </p>
                 </div>

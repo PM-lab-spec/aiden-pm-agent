@@ -55,6 +55,7 @@
 
     --gradient-brand: linear-gradient(135deg, hsl(220 70% 50%), hsl(260 60% 55%));
     --gradient-surface: linear-gradient(180deg, hsl(40 20% 98%), hsl(220 15% 96%));
+    --gradient-chat-bg: linear-gradient(160deg, hsl(270 40% 15%), hsl(320 50% 20%), hsl(350 40% 18%), hsl(240 30% 12%));
     --shadow-sm: 0 1px 2px hsl(220 20% 10% / 0.04);
     --shadow-md: 0 4px 12px hsl(220 20% 10% / 0.06);
     --shadow-lg: 0 8px 30px hsl(220 20% 10% / 0.08);

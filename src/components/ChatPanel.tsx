@@ -189,8 +189,8 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in">
             <div className="text-center space-y-3">
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-                Ready to build, {userName}?
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                Ready to build?
               </h2>
             </div>
           </div>
@@ -250,7 +250,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
       {/* Input area */}
       <div className="p-4 pb-6">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+          <div className="rounded-2xl border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,14%)] shadow-lg overflow-hidden">
             <textarea
               ref={textareaRef}
               value={input}
@@ -258,7 +258,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               onKeyDown={handleKeyDown}
               placeholder="Ask Aiden to analyze your product document"
               rows={2}
-              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[60px] max-h-[120px]"
+              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-white placeholder:text-[hsl(0,0%,45%)] focus:outline-none min-h-[60px] max-h-[120px]"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = "auto";
@@ -308,7 +308,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-3">
+          <p className="text-xs text-[hsl(0,0%,55%)] text-center mt-3">
             Upload a PRD, spec document, or research file to get started
           </p>
         </div>

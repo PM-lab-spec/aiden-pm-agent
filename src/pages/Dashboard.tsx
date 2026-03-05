@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
@@ -14,23 +14,34 @@ export default function Dashboard() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const chatRef = useRef<ChatPanelHandle>(null);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const promptHandledRef = useRef(false);
+  const promptTimeoutRef = useRef<number | null>(null);
 
   // Auto-send prompt from homepage (once only)
   useEffect(() => {
     if (promptHandledRef.current) return;
-    const prompt = searchParams.get("prompt");
-    if (prompt) {
-      promptHandledRef.current = true;
-      // Clear the URL param first
-      setSearchParams({}, { replace: true });
-      // Delay to let ChatPanel mount
-      setTimeout(() => {
-        chatRef.current?.sendMessage(prompt);
-      }, 400);
-    }
-  }, [searchParams, setSearchParams]);
+
+    const params = new URLSearchParams(location.search);
+    const prompt = params.get("prompt")?.trim();
+    if (!prompt) return;
+
+    promptHandledRef.current = true;
+    params.delete("prompt");
+    const cleaned = params.toString();
+    window.history.replaceState(null, "", cleaned ? `/app?${cleaned}` : "/app");
+
+    promptTimeoutRef.current = window.setTimeout(() => {
+      chatRef.current?.sendMessage(prompt);
+    }, 250);
+
+    return () => {
+      if (promptTimeoutRef.current) {
+        window.clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
+    };
+  }, [location.search]);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
     chatRef.current?.sendMessage(prompt);

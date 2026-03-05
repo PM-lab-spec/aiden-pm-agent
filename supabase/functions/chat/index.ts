@@ -81,6 +81,68 @@ Guidelines:
 - Ask clarifying questions when the request is ambiguous
 - Keep responses concise but thorough`;
 
+const NON_PM_WARNING = `⚠️ **This document doesn't appear to be product or research-related.**
+
+I'm designed specifically for **product management** and **market/product research** documents such as:
+- PRDs, feature specs, and product briefs
+- Customer feedback and support tickets
+- Market research and competitive analysis
+- User research studies and survey results
+- Meeting notes and sprint plans
+
+Please upload a relevant product or research document and I'll be happy to help! 📄`;
+
+function shouldCheckDocumentRelevance(userMessage: string): boolean {
+  const lower = userMessage.toLowerCase();
+  const cues = [
+    "uploaded document",
+    "this document",
+    "summar",
+    "analy",
+    "prd",
+    "user stories",
+    "roadmap",
+    "metrics",
+    "stakeholder",
+    "from uploaded",
+  ];
+  return cues.some((cue) => lower.includes(cue));
+}
+
+function classifyDocumentRelevance(documentName: string, sampleText: string): "relevant" | "irrelevant" | "unknown" {
+  const name = documentName.toLowerCase();
+  const text = sampleText.toLowerCase();
+
+  const hardIrrelevantNameCues = ["resume", "cv", "curriculum vitae", "cover letter"];
+  if (hardIrrelevantNameCues.some((cue) => name.includes(cue))) return "irrelevant";
+
+  const relevantCues = [
+    "prd", "product requirements", "feature", "roadmap", "sprint", "backlog", "customer feedback",
+    "user research", "market research", "competitive", "go to market", "kpi", "okr", "retention", "churn",
+    "experiment", "ab test", "persona", "support ticket", "product strategy", "product discovery"
+  ];
+
+  const irrelevantCues = [
+    "curriculum vitae", "work experience", "professional summary", "education", "skills", "certifications",
+    "linkedin", "phone", "email", "objective", "hobbies", "references"
+  ];
+
+  const relevantHits = relevantCues.reduce((acc, cue) => acc + (text.includes(cue) ? 1 : 0), 0);
+  const irrelevantHits = irrelevantCues.reduce((acc, cue) => acc + (text.includes(cue) ? 1 : 0), 0);
+
+  if (irrelevantHits >= 3 && relevantHits === 0) return "irrelevant";
+  if (relevantHits >= 2) return "relevant";
+  if (irrelevantHits >= 2 && relevantHits < 2) return "irrelevant";
+  return "unknown";
+}
+
+function createSingleMessageSseResponse(content: string): Response {
+  const body = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+  return new Response(body, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
+
 async function getQueryEmbedding(query: string, apiKey: string): Promise<number[]> {
   const response = await fetch("https://api.openai.com/v1/embeddings", {
     method: "POST",
@@ -115,17 +177,45 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+
     // Build context from RAG if sessionId provided and OpenAI key available
     let ragContext = "";
-    if (sessionId && OPENAI_API_KEY) {
+    let forcedWarning = "";
+
+    if (sessionId) {
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Get the latest user message for embedding
-        const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
-        if (lastUserMsg) {
+        // 1) Deterministic relevance guard using latest uploaded document
+        const { data: recentChunks, error: recentChunksError } = await supabase
+          .from("document_chunks")
+          .select("document_name, content")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (!recentChunksError && recentChunks && recentChunks.length > 0 && lastUserMsg) {
+          const latestDocumentName = recentChunks[0].document_name;
+          const latestDocumentSample = recentChunks
+            .filter((row: any) => row.document_name === latestDocumentName)
+            .map((row: any) => row.content)
+            .join("\n")
+            .slice(0, 4000);
+
+          if (shouldCheckDocumentRelevance(lastUserMsg.content)) {
+            const relevance = classifyDocumentRelevance(latestDocumentName, latestDocumentSample);
+            if (relevance === "irrelevant") {
+              forcedWarning = NON_PM_WARNING;
+              console.log(`Relevance guard: rejected non-product doc "${latestDocumentName}"`);
+            }
+          }
+        }
+
+        // 2) Only run RAG retrieval when document passed relevance guard
+        if (!forcedWarning && OPENAI_API_KEY && lastUserMsg) {
           const queryEmbedding = await getQueryEmbedding(lastUserMsg.content, OPENAI_API_KEY);
 
           const { data: chunks, error } = await supabase.rpc("match_document_chunks", {
@@ -149,6 +239,10 @@ serve(async (req) => {
       } catch (ragError) {
         console.error("RAG retrieval error (non-fatal):", ragError);
       }
+    }
+
+    if (forcedWarning) {
+      return createSingleMessageSseResponse(forcedWarning);
     }
 
     // Fetch recent negative feedback to improve responses

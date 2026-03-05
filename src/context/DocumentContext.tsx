@@ -3,6 +3,7 @@ import { extractPdfText, isPdf } from "@/lib/pdfExtractor";
 import { extractDocxText, isDocx } from "@/lib/docxExtractor";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 export type DocumentFile = {
   id: string;
@@ -53,19 +54,10 @@ async function embedDocument(content: string, documentName: string, sessionId: s
   return resp.json();
 }
 
-function getOrCreateSessionId(): string {
-  const key = "aiden_session_id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
-
 export function DocumentProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
-  const sessionIdRef = useRef(getOrCreateSessionId());
+  const { user } = useAuth();
+  const sessionId = user?.id ?? "anonymous";
   const processingRef = useRef(false);
   const queueRef = useRef<{ file: File; id: string }[]>([]);
 
@@ -94,7 +86,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
           prev.map((d) => d.id === id ? { ...d, content: text, status: "indexing" } : d)
         );
 
-        const result = await embedDocument(text, file.name, sessionIdRef.current);
+        const result = await embedDocument(text, file.name, sessionId);
         console.log(`Embedded "${file.name}": ${result.chunksCreated} chunks`);
 
         setDocuments((prev) =>
@@ -111,7 +103,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     }
 
     processingRef.current = false;
-  }, []);
+  }, [sessionId]);
 
   const addDocuments = useCallback((fileList: FileList) => {
     const files = Array.from(fileList);
@@ -158,7 +150,6 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
     setDocuments((prev) => [...newDocs.map((d) => d.doc), ...prev]);
 
-    // Queue for sequential processing
     for (const { file, doc } of newDocs) {
       queueRef.current.push({ file, id: doc.id });
     }
@@ -166,28 +157,26 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
   }, [documents.length, processQueue]);
 
   const removeDocument = useCallback((id: string) => {
-    // Find the document name before removing from state
     const doc = documents.find((d) => d.id === id);
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     queueRef.current = queueRef.current.filter((q) => q.id !== id);
 
-    // Delete chunks from database
     if (doc?.name) {
       supabase
         .from("document_chunks")
         .delete()
-        .eq("session_id", sessionIdRef.current)
+        .eq("session_id", sessionId)
         .eq("document_name", doc.name)
         .then(({ error }) => {
           if (error) console.error("Failed to delete chunks:", error);
           else console.log(`Deleted chunks for "${doc.name}"`);
         });
     }
-  }, [documents]);
+  }, [documents, sessionId]);
 
   return (
     <DocumentContext.Provider
-      value={{ documents, addDocuments, removeDocument, sessionId: sessionIdRef.current, maxDocuments: MAX_DOCUMENTS, activeDocumentName: documents.find(d => d.status === "indexed")?.name || null }}
+      value={{ documents, addDocuments, removeDocument, sessionId, maxDocuments: MAX_DOCUMENTS, activeDocumentName: documents.find(d => d.status === "indexed")?.name || null }}
     >
       {children}
     </DocumentContext.Provider>

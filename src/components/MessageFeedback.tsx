@@ -2,6 +2,7 @@ import { forwardRef, useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 interface MessageFeedbackProps {
   sessionId?: string;
@@ -15,6 +16,7 @@ const MessageFeedback = forwardRef<HTMLDivElement, MessageFeedbackProps>(functio
 ) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
 
   const handleFeedback = async (value: "up" | "down") => {
     if (rating || submitting) return;
@@ -27,6 +29,7 @@ const MessageFeedback = forwardRef<HTMLDivElement, MessageFeedbackProps>(functio
         message_content: messageContent.slice(0, 2000),
         user_query: userQuery?.slice(0, 1000) || null,
         rating: value,
+        user_id: user?.id,
       });
 
       if (error) {

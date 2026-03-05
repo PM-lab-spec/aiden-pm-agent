@@ -313,73 +313,78 @@ The guard only runs when the user message references uploaded documents (keyword
 
 ---
 
-## Setup and Configuration
+## Self-Hosting / Open-Source Deployment
 
 ### Prerequisites
 
 - Node.js 18+
-- A Supabase project with pgvector extension enabled
-- OpenAI API key (for embeddings)
-- AI Gateway access (for chat completions)
+- A [Supabase](https://supabase.com/) project (free tier works)
+- An [OpenAI API key](https://platform.openai.com/api-keys) for embeddings
 
-### Installation
+### 1. Clone & Install
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd <project-dir>
-
-# Install dependencies
+git clone <your-repo-url>
+cd aiden
 npm install
+```
 
-# Start development server
+### 2. Set Up Supabase
+
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Enable the `vector` extension: `CREATE EXTENSION IF NOT EXISTS vector;`
+3. Go to **SQL Editor** and run each migration file in `supabase/migrations/` in order
+
+### 3. Configure Environment
+
+Create a `.env` file in the project root:
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+```
+
+### 4. Set Up Supabase Secrets
+
+In your Supabase dashboard → **Edge Functions → Secrets**:
+
+| Secret Name | Description |
+|---|---|
+| `OPENAI_API_KEY` | Your OpenAI API key (for embeddings) |
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (Settings → API) |
+
+### 5. Deploy Edge Functions
+
+```bash
+npx supabase functions deploy chat
+npx supabase functions deploy embed-document
+```
+
+### 6. Run Locally
+
+```bash
 npm run dev
 ```
 
-### Supabase Setup
+Visit `http://localhost:5173` — you'll see the login page. Create an account and start chatting!
 
-1. Create a Supabase project
-2. Enable the vector extension in PostgreSQL
-3. Run the migrations in supabase/migrations/ to create tables and functions
-4. Deploy edge functions:
-   ```bash
-   supabase functions deploy chat
-   supabase functions deploy embed-document
-   ```
-5. Configure secrets (see below)
+### 7. Authentication
 
----
+Email/password auth is built in. Auto-confirm is enabled by default so users can sign in immediately after signup. To require email verification, update Supabase Auth settings in the dashboard.
 
-## Environment Variables
-
-### Frontend (.env)
-
-```
-VITE_SUPABASE_URL=<your-supabase-url>
-VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
-```
-
-### Edge Function Secrets (configured via Supabase dashboard or CLI)
-
-```
-OPENAI_API_KEY=<your-openai-api-key>
-LOVABLE_API_KEY=<your-ai-gateway-key>
-SUPABASE_URL=<auto-configured>
-SUPABASE_SERVICE_ROLE_KEY=<auto-configured>
-```
-
-**IMPORTANT: No API keys are stored in the codebase.** All secrets are managed via Supabase Edge Function secrets, accessible only at runtime. The .env file only contains publishable (non-sensitive) keys.
+**Data Isolation**: Each user's data is fully isolated via Row-Level Security (RLS) policies. Users can only see their own chat sessions, messages, documents, and feedback.
 
 ---
 
 ## Security Notes
 
-- **No private keys in code** — All sensitive credentials are stored as edge function secrets, accessible only at runtime
-- **Row-Level Security (RLS)** — Both document_chunks and chat_feedback tables have RLS enabled
-- **Session isolation** — Documents and feedback are scoped by session ID; no cross-session data leakage
-- **Content truncation** — Document content is capped at 100K characters; feedback content at 2K characters
+- **No private keys in code** — All sensitive credentials are stored as edge function secrets
+- **Row-Level Security (RLS)** — All tables have RLS enabled with per-user policies
+- **User isolation** — Documents, chats, and feedback are scoped by authenticated user ID
+- **Content truncation** — Document content capped at 100K chars; feedback at 2K chars
 - **Input validation** — Edge functions validate all inputs before processing
-- **CORS headers** — Configured for cross-origin access from the frontend
 
 ---
 
@@ -389,20 +394,15 @@ SUPABASE_SERVICE_ROLE_KEY=<auto-configured>
 
 - Maximum 2 documents per session
 - Maximum file size: 10MB
-- No user authentication (session-based only)
-- No persistent chat history across page reloads
 - Embeddings require OpenAI API key
 
 ### Future Enhancements
 
-- User authentication with persistent sessions
-- Chat history saved to database
 - Export artifacts to PDF/DOCX
 - Copy-to-clipboard on AI responses
 - Multi-document cross-referencing
 - Custom artifact templates
 - Team collaboration features
-- Competitive analysis from multiple documents
 - Integration with project management tools (Jira, Linear, Notion)
 
 ---

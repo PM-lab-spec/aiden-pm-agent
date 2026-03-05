@@ -53,9 +53,19 @@ async function embedDocument(content: string, documentName: string, sessionId: s
   return resp.json();
 }
 
+function getOrCreateSessionId(): string {
+  const key = "aiden_session_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export function DocumentProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
-  const sessionIdRef = useRef(crypto.randomUUID());
+  const sessionIdRef = useRef(getOrCreateSessionId());
   const processingRef = useRef(false);
   const queueRef = useRef<{ file: File; id: string }[]>([]);
 

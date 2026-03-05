@@ -30,7 +30,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const { sessionId } = useDocuments();
+  const { sessionId, activeDocumentName } = useDocuments();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,6 +75,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       await streamChat({
         messages: messagesForAI,
         sessionId,
+        activeDocumentName,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => { toast.error(error); setIsLoading(false); },
@@ -119,6 +120,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       await streamChat({
         messages: messagesForAI,
         sessionId,
+        activeDocumentName,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => {

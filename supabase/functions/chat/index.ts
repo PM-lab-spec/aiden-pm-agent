@@ -180,7 +180,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, sessionId } = await req.json();
+    const { messages, sessionId, activeDocumentName: clientActiveDoc } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -190,7 +190,8 @@ serve(async (req) => {
     // Build context from RAG if sessionId provided and OpenAI key available
     let ragContext = "";
     let forcedWarning = "";
-    let activeDocumentName: string | null = null;
+    // Prefer the active document name sent by the frontend (reflects current UI state)
+    let activeDocumentName: string | null = clientActiveDoc || null;
 
     if (sessionId) {
       try {
@@ -207,7 +208,10 @@ serve(async (req) => {
           .limit(20);
 
         if (!recentChunksError && recentChunks && recentChunks.length > 0 && lastUserMsg) {
-          activeDocumentName = recentChunks[0].document_name;
+          // Use client-provided name if available, otherwise fall back to DB
+          if (!activeDocumentName) {
+            activeDocumentName = recentChunks[0].document_name;
+          }
           const latestDocumentSample = recentChunks
             .filter((row: any) => row.document_name === activeDocumentName)
             .map((row: any) => row.content)
@@ -314,10 +318,17 @@ serve(async (req) => {
       });
     }
 
+    if (activeDocumentName) {
+      aiMessages.push({
+        role: "system",
+        content: `IMPORTANT: The user's currently active document is "${activeDocumentName}". Base your response ONLY on this document's content. Ignore any references to other documents in the conversation history — those documents have been removed by the user.`,
+      });
+    }
+
     if (ragContext) {
       aiMessages.push({
         role: "system",
-        content: `The following are relevant excerpts from the user's uploaded product documents. Use these to ground your response:\n\n${ragContext}`,
+        content: `The following are relevant excerpts from the user's currently active document "${activeDocumentName || "unknown"}". Use ONLY these to ground your response:\n\n${ragContext}`,
       });
     }
 

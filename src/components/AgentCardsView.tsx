@@ -190,7 +190,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   };
 
   const doSend = async (agentId: string, text: string) => {
-    if (loadingAgent) return;
+    if (loadingAgent || sendingRef.current) return;
+    sendingRef.current = true;
     const agent = AGENTS.find(a => a.id === agentId)!;
 
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text };

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { extractPdfText, isPdf } from "@/lib/pdfExtractor";
 
 export type DocumentFile = {
   id: string;
@@ -40,24 +41,30 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
       };
       setDocuments((prev) => [doc, ...prev]);
 
-      // Read file content as text
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setDocuments((prev) =>
-          prev.map((d) =>
-            d.id === id ? { ...d, content: text, status: "indexed" } : d
-          )
-        );
+      // Extract content based on file type
+      const processFile = async () => {
+        try {
+          let text: string;
+          if (isPdf(file)) {
+            text = await extractPdfText(file);
+          } else {
+            text = await file.text();
+          }
+          setDocuments((prev) =>
+            prev.map((d) =>
+              d.id === id ? { ...d, content: text, status: "indexed" } : d
+            )
+          );
+        } catch (err) {
+          console.error("Error reading file:", file.name, err);
+          setDocuments((prev) =>
+            prev.map((d) =>
+              d.id === id ? { ...d, status: "error" } : d
+            )
+          );
+        }
       };
-      reader.onerror = () => {
-        setDocuments((prev) =>
-          prev.map((d) =>
-            d.id === id ? { ...d, status: "error" } : d
-          )
-        );
-      };
-      reader.readAsText(file);
+      processFile();
     });
   }, []);
 

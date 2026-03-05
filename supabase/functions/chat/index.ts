@@ -211,6 +211,7 @@ serve(async (req) => {
     if (sessionId && activeDocumentName) {
       // Only run RAG when user has an actively uploaded document
       try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
 

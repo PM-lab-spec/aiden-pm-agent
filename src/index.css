@@ -60,6 +60,22 @@
     --shadow-md: 0 4px 12px hsl(220 20% 10% / 0.06);
     --shadow-lg: 0 8px 30px hsl(220 20% 10% / 0.08);
     --shadow-glow: 0 0 20px hsl(220 70% 50% / 0.15);
+
+    /* Dark UI tokens (used in dashboard/chat dark surfaces) */
+    --dark-surface: 240 10% 12%;
+    --dark-surface-hover: 240 10% 18%;
+    --dark-surface-active: 240 10% 20%;
+    --dark-border: 0 0% 20%;
+    --dark-border-subtle: 240 10% 18%;
+    --dark-text: 0 0% 85%;
+    --dark-text-heading: 0 0% 100%;
+    --dark-text-muted: 0 0% 50%;
+    --dark-text-subtle: 0 0% 40%;
+    --dark-text-hint: 0 0% 45%;
+    --dark-input-bg: 240 10% 14%;
+    --dark-input-bg-deep: 240 10% 10%;
+    --dark-accent-purple: 260 70% 60%;
+    --dark-accent-purple-muted: 260 40% 25%;
   }
 }
 

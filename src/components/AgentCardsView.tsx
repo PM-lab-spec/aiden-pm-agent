@@ -263,6 +263,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
         signal: controller.signal,
       });
     } catch (e: any) {
+      sendingRef.current = false;
       if (e.name !== "AbortError") {
         toast.error("Failed to connect to AI.");
         setLoadingAgent(null);

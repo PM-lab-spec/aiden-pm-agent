@@ -21,6 +21,7 @@ export type Database = {
           message_content: string
           rating: string
           session_id: string
+          user_id: string | null
           user_query: string | null
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           message_content: string
           rating: string
           session_id: string
+          user_id?: string | null
           user_query?: string | null
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           message_content?: string
           rating?: string
           session_id?: string
+          user_id?: string | null
           user_query?: string | null
         }
         Relationships: []
@@ -81,6 +84,7 @@ export type Database = {
           session_id: string
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -89,6 +93,7 @@ export type Database = {
           session_id: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -97,6 +102,7 @@ export type Database = {
           session_id?: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -109,6 +115,7 @@ export type Database = {
           embedding: string | null
           id: string
           session_id: string
+          user_id: string | null
         }
         Insert: {
           chunk_index: number
@@ -118,6 +125,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           session_id: string
+          user_id?: string | null
         }
         Update: {
           chunk_index?: number
@@ -127,6 +135,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           session_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

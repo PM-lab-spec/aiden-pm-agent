@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus } from "lucide-react";
+import { Bot, PanelLeftClose, PanelLeft, BarChart3, Plus, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
@@ -17,6 +18,12 @@ export default function Dashboard() {
   const location = useLocation();
   const promptHandledRef = useRef(false);
   const promptTimeoutRef = useRef<number | null>(null);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   // Auto-send prompt from homepage (once only)
   useEffect(() => {
@@ -138,6 +145,10 @@ export default function Dashboard() {
               <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="h-3.5 w-3.5" />
                 <span className="text-xs">Analytics</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={handleSignOut} title={user?.email || "Sign out"}>
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="text-xs">Sign Out</span>
               </Button>
             </div>
           </header>

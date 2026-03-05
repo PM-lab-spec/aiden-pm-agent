@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 export type ChatSession = {
   id: string;
@@ -16,19 +17,20 @@ export function useChatHistory(sessionId: string) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const savingRef = useRef(false);
+  const { user } = useAuth();
 
-  /** Load all sessions for this document session */
   const loadSessions = useCallback(async () => {
+    if (!user) return;
     const { data } = await supabase
       .from("chat_sessions")
       .select("*")
       .eq("session_id", sessionId)
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(20);
     if (data) setSessions(data as ChatSession[]);
-  }, [sessionId]);
+  }, [sessionId, user]);
 
-  /** Load messages for a specific chat session */
   const loadMessages = useCallback(async (chatSessionId: string): Promise<Message[]> => {
     const { data } = await supabase
       .from("chat_messages")
@@ -43,14 +45,15 @@ export function useChatHistory(sessionId: string) {
     }));
   }, []);
 
-  /** Create a new chat session and return its ID */
   const createSession = useCallback(async (title: string, documentName?: string | null): Promise<string> => {
+    if (!user) throw new Error("Not authenticated");
     const { data, error } = await supabase
       .from("chat_sessions")
       .insert({
         session_id: sessionId,
         title,
         document_name: documentName || null,
+        user_id: user.id,
       })
       .select("id")
       .single();
@@ -59,11 +62,10 @@ export function useChatHistory(sessionId: string) {
     setActiveChatId(newId);
     await loadSessions();
     return newId;
-  }, [sessionId, loadSessions]);
+  }, [sessionId, loadSessions, user]);
 
-  /** Save a message to the active chat session */
   const saveMessage = useCallback(async (chatSessionId: string, role: "user" | "assistant", content: string) => {
-    if (savingRef.current && role === "assistant") return; // debounce assistant saves
+    if (savingRef.current && role === "assistant") return;
     
     await supabase
       .from("chat_messages")
@@ -74,9 +76,7 @@ export function useChatHistory(sessionId: string) {
       });
   }, []);
 
-  /** Update the assistant's last message (for streaming - upsert) */
   const updateLastAssistantMessage = useCallback(async (chatSessionId: string, content: string) => {
-    // Delete the last assistant message and re-insert with full content
     const { data: existing } = await supabase
       .from("chat_messages")
       .select("id")
@@ -93,7 +93,6 @@ export function useChatHistory(sessionId: string) {
     }
   }, []);
 
-  /** Update session title based on first user message */
   const updateSessionTitle = useCallback(async (chatSessionId: string, firstMessage: string) => {
     const title = firstMessage.slice(0, 60) + (firstMessage.length > 60 ? "..." : "");
     await supabase

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocuments } from "@/context/DocumentContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 type ChatSession = {
@@ -35,19 +36,21 @@ export default function ChatHistoryDropdown({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [open, setOpen] = useState(false);
   const { sessionId } = useDocuments();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !user) return;
     (async () => {
       const { data } = await supabase
         .from("chat_sessions")
         .select("*")
         .eq("session_id", sessionId)
+        .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(20);
       if (data) setSessions(data as ChatSession[]);
     })();
-  }, [open, sessionId]);
+  }, [open, sessionId, user]);
 
   const handleDelete = async (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();

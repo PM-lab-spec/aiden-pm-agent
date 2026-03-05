@@ -330,7 +330,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="text-white font-semibold text-lg">{headerText}</h2>
+                <h2 className="text-dark-text-heading font-semibold text-lg">{headerText}</h2>
                 {!displayDocName && (
                   <button
                     onClick={() => {

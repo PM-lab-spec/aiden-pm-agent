@@ -483,7 +483,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
 
                 {/* Input */}
                 <div className="p-4">
-                  <div className="flex items-center gap-2 rounded-xl border border-[hsl(0,0%,20%)] bg-[hsl(240,10%,10%)] px-4 py-2">
+                  <div className="flex items-center gap-2 rounded-xl border border-dark-border bg-dark-input-bg-deep px-4 py-2">
                     <input
                       type="text"
                       value={inputVal}

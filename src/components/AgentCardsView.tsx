@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { FileText, ListChecks, TrendingUp, BarChart3, Map, MessageCircle, X, Sparkles, Send, Loader2, Square, Plus, MessagesSquare } from "lucide-react";
+import { FileText, ListChecks, TrendingUp, BarChart3, Map, MessageCircle, X, Sparkles, Send, Loader2, Square, Plus, MessagesSquare, Pencil, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import ArtifactMarkdown from "@/components/ArtifactMarkdown";
@@ -87,7 +87,14 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
   const { sessionId, activeDocumentName, addDocuments } = useDocuments();
   const chatHistory = useChatHistory(sessionId);
 
-  const headerText = documentName || firstQuestion || "New Chat";
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Derive header: activeDocumentName (reactive) > prop documentName > custom title > first question
+  const displayDocName = activeDocumentName || documentName;
+  const headerText = displayDocName || customTitle || firstQuestion || "New Chat";
   const initializedRef = useRef(false);
 
   // Seed initial messages into General Chat and auto-expand it
@@ -244,8 +251,52 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-white font-semibold text-lg">{headerText}</h2>
-            {documentName && (
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={editTitleValue}
+                  onChange={(e) => setEditTitleValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setCustomTitle(editTitleValue.trim() || null);
+                      setIsEditingTitle(false);
+                    } else if (e.key === "Escape") {
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  className="bg-transparent border border-[hsl(0,0%,30%)] rounded-md px-2 py-1 text-white font-semibold text-lg focus:outline-none focus:border-primary"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    setCustomTitle(editTitleValue.trim() || null);
+                    setIsEditingTitle(false);
+                  }}
+                  className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,60%)] hover:text-white transition-colors"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="text-white font-semibold text-lg">{headerText}</h2>
+                {!displayDocName && (
+                  <button
+                    onClick={() => {
+                      setEditTitleValue(customTitle || firstQuestion || "");
+                      setIsEditingTitle(true);
+                    }}
+                    className="p-1 rounded hover:bg-[hsl(240,10%,20%)] text-[hsl(0,0%,40%)] hover:text-white transition-colors"
+                    title="Edit title"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+            {displayDocName && (
               <p className="text-sm text-[hsl(0,0%,50%)]">Uploaded {new Date().toLocaleDateString()}</p>
             )}
           </div>
@@ -322,7 +373,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                       <div className="text-center">
                         <p className="text-white font-medium">Ask about {agent.label.toLowerCase()}</p>
                         <p className="text-sm text-[hsl(0,0%,50%)] mt-1">
-                          Based on: {documentName || firstQuestion || "your input"}
+                          Based on: {displayDocName || firstQuestion || "your input"}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">

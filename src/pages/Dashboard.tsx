@@ -90,7 +90,7 @@ export default function Dashboard() {
     setViewMode("agents");
   }, []);
 
-  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => {
+  const handleTransitionToAgents = (firstMessage: string, docName: string | null, msgs?: { role: "user" | "assistant"; content: string; agent_type?: string }[], chatSessionId?: string | null) => {
     setAgentFirstQuestion(firstMessage);
     setAgentDocName(docName);
     setInitialMessages(msgs || null);

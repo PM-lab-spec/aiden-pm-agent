@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,9 +50,32 @@ Guidelines:
 - Be specific and actionable, not vague
 - Use real PM terminology
 - Structure outputs with clear markdown formatting
-- When the user references uploaded documents, incorporate that context
+- When document context is provided, ALWAYS use it to ground your answers — cite specific details from the documents
 - Ask clarifying questions when the request is ambiguous
 - Keep responses concise but thorough`;
+
+async function getQueryEmbedding(query: string, apiKey: string): Promise<number[]> {
+  const response = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "text-embedding-3-small",
+      input: query,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    console.error("OpenAI embeddings error:", response.status, err);
+    throw new Error("Failed to generate query embedding");
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -59,11 +83,58 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Build context from RAG if sessionId provided and OpenAI key available
+    let ragContext = "";
+    if (sessionId && OPENAI_API_KEY) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Get the latest user message for embedding
+        const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+        if (lastUserMsg) {
+          const queryEmbedding = await getQueryEmbedding(lastUserMsg.content, OPENAI_API_KEY);
+
+          const { data: chunks, error } = await supabase.rpc("match_document_chunks", {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_session_id: sessionId,
+            match_count: 8,
+            match_threshold: 0.25,
+          });
+
+          if (error) {
+            console.error("RAG search error:", error);
+          } else if (chunks && chunks.length > 0) {
+            ragContext = chunks
+              .map((c: any) => `[From "${c.document_name}" (chunk ${c.chunk_index + 1}, relevance: ${(c.similarity * 100).toFixed(0)}%)]\n${c.content}`)
+              .join("\n\n---\n\n");
+            console.log(`RAG: Found ${chunks.length} relevant chunks for query`);
+          } else {
+            console.log("RAG: No relevant chunks found");
+          }
+        }
+      } catch (ragError) {
+        console.error("RAG retrieval error (non-fatal):", ragError);
+      }
     }
+
+    // Build the messages array with RAG context
+    const aiMessages: any[] = [{ role: "system", content: SYSTEM_PROMPT }];
+
+    if (ragContext) {
+      aiMessages.push({
+        role: "system",
+        content: `The following are relevant excerpts from the user's uploaded product documents. Use these to ground your response:\n\n${ragContext}`,
+      });
+    }
+
+    aiMessages.push(...messages);
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -75,10 +146,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
-          ],
+          messages: aiMessages,
           stream: true,
         }),
       }

@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react";
 import { extractPdfText, isPdf } from "@/lib/pdfExtractor";
 import { extractDocxText, isDocx } from "@/lib/docxExtractor";
+import { toast } from "sonner";
 
 export type DocumentFile = {
   id: string;
@@ -8,14 +9,14 @@ export type DocumentFile = {
   size: number;
   type: string;
   content: string;
-  status: "uploading" | "indexed" | "error";
+  status: "uploading" | "indexing" | "indexed" | "error";
 };
 
 type DocumentContextType = {
   documents: DocumentFile[];
   addDocuments: (files: FileList) => void;
   removeDocument: (id: string) => void;
-  getDocumentContext: () => string;
+  sessionId: string;
 };
 
 const DocumentContext = createContext<DocumentContextType | null>(null);
@@ -26,8 +27,30 @@ export function useDocuments() {
   return ctx;
 }
 
+const EMBED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`;
+
+async function embedDocument(content: string, documentName: string, sessionId: string) {
+  const resp = await fetch(EMBED_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ content, documentName, sessionId }),
+  });
+
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || `Embedding failed: ${resp.status}`);
+  }
+
+  return resp.json();
+}
+
 export function DocumentProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
+  // Generate a unique session ID per app session
+  const sessionIdRef = useRef(crypto.randomUUID());
 
   const addDocuments = useCallback((fileList: FileList) => {
     Array.from(fileList).forEach((file) => {
@@ -42,9 +65,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
       };
       setDocuments((prev) => [doc, ...prev]);
 
-      // Extract content based on file type
       const processFile = async () => {
         try {
+          // 1. Extract text
           let text: string;
           if (isPdf(file)) {
             text = await extractPdfText(file);
@@ -53,18 +76,32 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
           } else {
             text = await file.text();
           }
+
           setDocuments((prev) =>
             prev.map((d) =>
-              d.id === id ? { ...d, content: text, status: "indexed" } : d
+              d.id === id ? { ...d, content: text, status: "indexing" } : d
             )
           );
+
+          // 2. Send to embedding edge function
+          const result = await embedDocument(text, file.name, sessionIdRef.current);
+          console.log(`Embedded "${file.name}": ${result.chunksCreated} chunks`);
+
+          setDocuments((prev) =>
+            prev.map((d) =>
+              d.id === id ? { ...d, status: "indexed" } : d
+            )
+          );
+
+          toast.success(`"${file.name}" indexed (${result.chunksCreated} chunks)`);
         } catch (err) {
-          console.error("Error reading file:", file.name, err);
+          console.error("Error processing file:", file.name, err);
           setDocuments((prev) =>
             prev.map((d) =>
               d.id === id ? { ...d, status: "error" } : d
             )
           );
+          toast.error(`Failed to index "${file.name}"`);
         }
       };
       processFile();
@@ -75,21 +112,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     setDocuments((prev) => prev.filter((d) => d.id !== id));
   }, []);
 
-  const getDocumentContext = useCallback(() => {
-    const indexed = documents.filter((d) => d.status === "indexed" && d.content);
-    if (indexed.length === 0) return "";
-
-    return indexed
-      .map(
-        (d) =>
-          `--- Document: ${d.name} ---\n${d.content.slice(0, 15000)}\n--- End of ${d.name} ---`
-      )
-      .join("\n\n");
-  }, [documents]);
-
   return (
     <DocumentContext.Provider
-      value={{ documents, addDocuments, removeDocument, getDocumentContext }}
+      value={{ documents, addDocuments, removeDocument, sessionId: sessionIdRef.current }}
     >
       {children}
     </DocumentContext.Provider>

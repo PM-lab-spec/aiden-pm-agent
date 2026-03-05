@@ -29,7 +29,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const { getDocumentContext, documents } = useDocuments();
+  const { sessionId } = useDocuments();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,12 +55,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const docContext = getDocumentContext();
     const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
-    if (docContext) {
-      messagesForAI.unshift({ role: "user", content: `[DOCUMENT CONTEXT]\n\n${docContext}\n\n[END DOCUMENT CONTEXT]` });
-      messagesForAI.splice(1, 0, { role: "assistant", content: "I've received and reviewed the uploaded documents." });
-    }
 
     let assistantSoFar = "";
     const upsertAssistant = (chunk: string) => {
@@ -78,6 +73,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
     try {
       await streamChat({
         messages: messagesForAI,
+        sessionId,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => { toast.error(error); setIsLoading(false); },
@@ -116,26 +112,12 @@ const ChatPanel = forwardRef<ChatPanelHandle, {}>((_props, ref) => {
       });
     };
 
-    // Build messages with document context injected
-    const docContext = getDocumentContext();
     const messagesForAI = updatedMessages.map(({ role, content }) => ({ role, content }));
-
-    // Inject document context as a system-level user message at the start
-    if (docContext) {
-      messagesForAI.unshift({
-        role: "user" as const,
-        content: `[DOCUMENT CONTEXT - The user has uploaded the following documents. Use them to answer questions and generate artifacts.]\n\n${docContext}\n\n[END DOCUMENT CONTEXT]`,
-      });
-      // Add a fake assistant ack so the model knows it received the docs
-      messagesForAI.splice(1, 0, {
-        role: "assistant" as const,
-        content: "I've received and reviewed the uploaded documents. I'll use them as context for our conversation.",
-      });
-    }
 
     try {
       await streamChat({
         messages: messagesForAI,
+        sessionId,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => {

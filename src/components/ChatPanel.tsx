@@ -23,7 +23,7 @@ export type ChatPanelHandle = {
 
 interface ChatPanelProps {
   userName?: string;
-  onTransitionToAgents?: (firstMessage: string, docName: string | null, initialMessages?: { role: "user" | "assistant"; content: string }[]) => void;
+  onTransitionToAgents?: (firstMessage: string, docName: string | null, initialMessages?: { role: "user" | "assistant"; content: string }[], chatSessionId?: string | null) => void;
 }
 
 const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "there", onTransitionToAgents }, ref) => {
@@ -75,7 +75,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
 
     // If document is uploaded, transition immediately to agents view
     if (messages.length === 0 && onTransitionToAgents && activeDocumentName) {
-      onTransitionToAgents(text, activeDocumentName, [{ role: "user", content: text }]);
+      onTransitionToAgents(text, activeDocumentName, [{ role: "user", content: text }], activeChatIdRef.current);
       return;
     }
 
@@ -136,7 +136,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ userName = "the
               { role: "assistant" as const, content: assistantSoFar },
             ];
             setTimeout(() => {
-              onTransitionToAgents(text, null, convMessages);
+              onTransitionToAgents(text, null, convMessages, activeChatIdRef.current);
             }, 1500);
           }
         },

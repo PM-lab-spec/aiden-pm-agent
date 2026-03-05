@@ -420,8 +420,8 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
                         <Sparkles className="h-6 w-6" style={{ color: agent.color }} />
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-medium">Ask about {agent.label.toLowerCase()}</p>
-                        <p className="text-sm text-[hsl(0,0%,50%)] mt-1">
+                         <p className="text-dark-text-heading font-medium">Ask about {agent.label.toLowerCase()}</p>
+                        <p className="text-sm text-dark-text-muted mt-1">
                           Based on: {displayDocName || firstQuestion || "your input"}
                         </p>
                       </div>

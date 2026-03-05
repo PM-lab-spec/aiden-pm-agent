@@ -346,7 +346,7 @@ export default function AgentCardsView({ documentName, firstQuestion, chatSessio
               </div>
             )}
             {displayDocName && (
-              <p className="text-sm text-[hsl(0,0%,50%)]">Uploaded {new Date().toLocaleDateString()}</p>
+              <p className="text-sm text-dark-text-muted">Uploaded {new Date().toLocaleDateString()}</p>
             )}
           </div>
         </div>

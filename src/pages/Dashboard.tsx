@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import ChatPanel, { type ChatPanelHandle } from "@/components/ChatPanel";
 import DocumentSidebar from "@/components/DocumentSidebar";
 import ArtifactPanel from "@/components/ArtifactPanel";
+import SampleTemplates from "@/components/SampleTemplates";
 import AgentCardsView from "@/components/AgentCardsView";
 import ChatHistoryDropdown from "@/components/ChatHistoryDropdown";
 import { DocumentProvider } from "@/context/DocumentContext";
@@ -198,6 +199,9 @@ export default function Dashboard() {
               <div className="p-6 max-w-3xl mx-auto w-full">
                 <h2 className="text-xl font-semibold text-dark-text-heading mb-6">Resources</h2>
                 <ArtifactPanel onGenerate={handleGenerate} />
+                <div className="mt-8">
+                  <SampleTemplates onUseTemplate={(prompt) => handleGenerate("template", prompt)} />
+                </div>
               </div>
             </div>
           ) : viewMode === "agents" ? (

@@ -28,8 +28,10 @@ export default function Auth() {
   const handleDiveIn = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInAnonymously();
+      const { data, error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
+      // Store agent ID in user metadata
+      await supabase.auth.updateUser({ data: { agent_id: agentId } });
       toast.success(`Welcome, ${agentId}!`);
       navigate("/app");
     } catch (err: any) {

@@ -49,9 +49,9 @@ export default function Auth() {
           <div className="mx-auto h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
             <Bot className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Aiden</h1>
+          <h1 className="text-3xl font-bold text-white">Aiden</h1>
           <p className="text-sm text-muted-foreground">
-            Your AI-powered project management assistant
+            AI Powered Product Manager Assistant
           </p>
         </div>
 

@@ -299,24 +299,28 @@ serve(async (req) => {
       return createSingleMessageSseResponse(forcedWarning);
     }
 
-    // Fetch recent negative feedback to improve responses
-    let feedbackContext = "";
+    // Fetch recent feedback (both positive and negative) to improve responses
+    let negativeFeedbackContext = "";
+    let positiveFeedbackContext = "";
     if (sessionId) {
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const sb = createClient(supabaseUrl, supabaseKey);
-        const { data: negFeedback } = await sb
-          .from("chat_feedback")
-          .select("user_query, message_content")
-          .eq("session_id", sessionId)
-          .eq("rating", "down")
-          .order("created_at", { ascending: false })
-          .limit(5);
+
+        const [{ data: negFeedback }, { data: posFeedback }] = await Promise.all([
+          sb.from("chat_feedback").select("user_query, message_content").eq("session_id", sessionId).eq("rating", "down").order("created_at", { ascending: false }).limit(5),
+          sb.from("chat_feedback").select("user_query, message_content").eq("session_id", sessionId).eq("rating", "up").order("created_at", { ascending: false }).limit(5),
+        ]);
 
         if (negFeedback && negFeedback.length > 0) {
-          feedbackContext = negFeedback
+          negativeFeedbackContext = negFeedback
             .map((f: any) => `- User asked: "${f.user_query?.slice(0, 100) || "N/A"}" → Response was marked unhelpful`)
+            .join("\n");
+        }
+        if (posFeedback && posFeedback.length > 0) {
+          positiveFeedbackContext = posFeedback
+            .map((f: any) => `- User asked: "${f.user_query?.slice(0, 100) || "N/A"}" → Response was marked helpful`)
             .join("\n");
         }
       } catch (e) {
@@ -328,11 +332,15 @@ serve(async (req) => {
     const agentFocus = agentType ? getAgentFocusPrompt(agentType) : "";
     const aiMessages: any[] = [{ role: "system", content: SYSTEM_PROMPT + agentFocus }];
 
-    if (feedbackContext) {
-      aiMessages.push({
-        role: "system",
-        content: `The user has previously marked these types of responses as unhelpful. Avoid similar patterns:\n${feedbackContext}`,
-      });
+    if (positiveFeedbackContext || negativeFeedbackContext) {
+      let feedbackPrompt = "User feedback from this session:\n";
+      if (positiveFeedbackContext) {
+        feedbackPrompt += `\nThese response patterns were marked HELPFUL — continue using similar approaches:\n${positiveFeedbackContext}`;
+      }
+      if (negativeFeedbackContext) {
+        feedbackPrompt += `\nThese response patterns were marked UNHELPFUL — avoid similar patterns:\n${negativeFeedbackContext}`;
+      }
+      aiMessages.push({ role: "system", content: feedbackPrompt });
     }
 
     if (activeDocumentName) {

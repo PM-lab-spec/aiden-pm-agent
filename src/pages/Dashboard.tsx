@@ -53,7 +53,10 @@ export default function Dashboard() {
   }, [location.search]);
 
   const handleGenerate = (_artifactId: string, prompt: string) => {
-    chatRef.current?.sendMessage(prompt);
+    setViewMode("home");
+    setTimeout(() => {
+      chatRef.current?.sendMessage(prompt);
+    }, 100);
   };
 
   const handleNewChat = () => {

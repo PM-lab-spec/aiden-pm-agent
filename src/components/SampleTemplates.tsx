@@ -109,7 +109,12 @@ export default function SampleTemplates() {
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04 }}
-              onClick={() => onUseTemplate(template.prompt)}
+              onClick={() => {
+                downloadTemplate(template.title, template.prompt);
+                toast.success(`"${template.title}" downloaded!`, {
+                  description: "Fill it out and upload it to an agent to get started.",
+                });
+              }}
               className="w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group hover:scale-[1.01]"
               style={{
                 background: colors.bg,
@@ -126,7 +131,7 @@ export default function SampleTemplates() {
                 <p className="text-sm font-medium text-white">{template.title}</p>
                 <p className="text-xs text-[hsl(0,0%,55%)] truncate">{template.description}</p>
               </div>
-              <ArrowRight
+              <Download
                 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-60 transition-opacity shrink-0"
                 style={{ color: colors.accent }}
               />

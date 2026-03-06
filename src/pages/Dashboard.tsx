@@ -106,7 +106,8 @@ export default function Dashboard() {
     setActiveChatId(id);
   };
 
-  const userName = user?.email?.split("@")[0] || "User";
+  const agentId = user?.user_metadata?.agent_id;
+  const userName = agentId || user?.email?.split("@")[0] || "User";
 
   return (
     <DocumentProvider>

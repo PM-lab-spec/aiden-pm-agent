@@ -1,18 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Bot, Loader2 } from "lucide-react";
+import { Bot, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
+
+function generateAgentId(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `Agent-${result}`;
+}
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agentId] = useState(() => generateAgentId());
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -20,24 +25,15 @@ export default function Auth() {
     if (user) navigate("/app", { replace: true });
   }, [user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDiveIn = async () => {
     setLoading(true);
-
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Logged in successfully!");
-        navigate("/app");
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        toast.success("Account created! You can now sign in.");
-        navigate("/app");
-      }
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      toast.success(`Welcome, ${agentId}!`);
+      navigate("/app");
     } catch (err: any) {
-      toast.error(err.message || "Authentication failed");
+      toast.error(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -48,56 +44,44 @@ export default function Auth() {
       className="min-h-screen flex items-center justify-center p-4"
       style={{ background: "var(--gradient-chat-bg)" }}
     >
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-            <Bot className="h-6 w-6 text-primary-foreground" />
+      <div className="w-full max-w-sm space-y-8 text-center">
+        <div className="space-y-3">
+          <div className="mx-auto h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
+            <Bot className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Aiden</h1>
-          <p className="text-sm text-[hsl(0,0%,55%)]">
-            {isLogin ? "Sign in to your account" : "Create a new account"}
+          <h1 className="text-3xl font-bold text-foreground">Aiden</h1>
+          <p className="text-sm text-muted-foreground">
+            Your AI-powered project management assistant
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[hsl(0,0%,80%)]">Email</label>
-            <Input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-[hsl(240,10%,14%)] border-[hsl(0,0%,20%)] text-white placeholder:text-[hsl(0,0%,40%)] focus-visible:ring-primary"
-            />
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm px-4 py-3">
+            <p className="text-xs text-muted-foreground mb-1">Your session ID</p>
+            <p className="text-lg font-mono font-semibold text-foreground tracking-wider">
+              {agentId}
+            </p>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[hsl(0,0%,80%)]">Password</label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="bg-[hsl(240,10%,14%)] border-[hsl(0,0%,20%)] text-white placeholder:text-[hsl(0,0%,40%)] focus-visible:ring-primary"
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isLogin ? "Sign In" : "Sign Up"}
-          </Button>
-        </form>
 
-        <p className="text-center text-sm text-[hsl(0,0%,55%)]">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-primary hover:underline font-medium"
+          <Button
+            onClick={handleDiveIn}
+            disabled={loading}
+            size="lg"
+            className="w-full text-base gap-2"
+            variant="hero"
           >
-            {isLogin ? "Sign Up" : "Sign In"}
-          </button>
-        </p>
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Sparkles className="h-5 w-5" />
+            )}
+            Dive In
+          </Button>
+
+          <p className="text-xs text-muted-foreground/60">
+            No sign-up required. Your data is tied to this browser session.
+          </p>
+        </div>
       </div>
     </div>
   );

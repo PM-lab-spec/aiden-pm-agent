@@ -221,6 +221,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        <div className="absolute bottom-1 right-2 text-[9px] text-dark-text-subtle/40 select-none pointer-events-none tracking-wide">
+          Shriansh
+        </div>
       </div>
     </DocumentProvider>
   );

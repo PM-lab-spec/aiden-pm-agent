@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Target, FlaskConical, MessageSquare, TrendingUp, ArrowRight } from "lucide-react";
+import { FileText, Target, FlaskConical, MessageSquare, TrendingUp, Download } from "lucide-react";
 import { SAMPLE_TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "@/data/sampleTemplates";
+import { toast } from "sonner";
 
 const CATEGORY_ICONS: Record<TemplateCategory, typeof FileText> = {
   planning: Target,
@@ -39,11 +40,21 @@ const CATEGORY_COLORS: Record<TemplateCategory, { accent: string; bg: string; bo
   },
 };
 
-interface SampleTemplatesProps {
-  onUseTemplate: (prompt: string) => void;
+function downloadTemplate(title: string, prompt: string) {
+  const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "") + ".md";
+  const content = `# ${title}\n\n${prompt}\n`;
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
-export default function SampleTemplates({ onUseTemplate }: SampleTemplatesProps) {
+export default function SampleTemplates() {
   const [activeCategory, setActiveCategory] = useState<TemplateCategory>("planning");
 
   const filtered = SAMPLE_TEMPLATES.filter((t) => t.category === activeCategory);
@@ -98,7 +109,12 @@ export default function SampleTemplates({ onUseTemplate }: SampleTemplatesProps)
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04 }}
-              onClick={() => onUseTemplate(template.prompt)}
+              onClick={() => {
+                downloadTemplate(template.title, template.prompt);
+                toast.success(`"${template.title}" downloaded!`, {
+                  description: "Fill it out and upload it to an agent to get started.",
+                });
+              }}
               className="w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group hover:scale-[1.01]"
               style={{
                 background: colors.bg,
@@ -115,7 +131,7 @@ export default function SampleTemplates({ onUseTemplate }: SampleTemplatesProps)
                 <p className="text-sm font-medium text-white">{template.title}</p>
                 <p className="text-xs text-[hsl(0,0%,55%)] truncate">{template.description}</p>
               </div>
-              <ArrowRight
+              <Download
                 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-60 transition-opacity shrink-0"
                 style={{ color: colors.accent }}
               />

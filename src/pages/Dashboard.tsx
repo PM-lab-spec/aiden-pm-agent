@@ -201,7 +201,7 @@ export default function Dashboard() {
             <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin" style={{ background: "var(--gradient-chat-bg)" }}>
               <div className="p-6 max-w-3xl mx-auto w-full">
                 <h2 className="text-xl font-semibold text-dark-text-heading mb-6">Resources</h2>
-                <SampleTemplates onUseTemplate={(prompt) => handleGenerate("template", prompt)} />
+                <SampleTemplates />
               </div>
             </div>
           ) : viewMode === "agents" ? (
